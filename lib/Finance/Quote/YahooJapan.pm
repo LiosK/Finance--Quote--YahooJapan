@@ -60,8 +60,8 @@ sub _scrape($;@) {
         my (undef, $sym, undef, $name, $date, $price) = split /\s+/, $row;
 
         # Formats data.
-        $date .= '/2009';   # TODO
         $price =~ s/,//g;   # TODO
+        $date = _determine_date($date);
 
         # Validates data.
         # TODO
@@ -75,6 +75,17 @@ sub _scrape($;@) {
     }
 
     return %info;
+}
+
+# Determines the date of a quote.
+sub _determine_date($;) {
+    my ($date, @now) = (shift, localtime);
+    if ($date =~ /\d{1,2}\/\d{1,2}/) {
+        # MM/DD
+        return $date . '/' . ($now[5] + 1900);
+    } else {
+        return '0000-00-00';
+    }
 }
 
 1;
