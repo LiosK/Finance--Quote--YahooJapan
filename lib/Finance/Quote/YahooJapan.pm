@@ -2,6 +2,9 @@
 
 # Author:   LiosK <contact@mail.liosk.net>
 # License:  The GNU General Public License
+#
+# Information obtained by this module may be covered by Yahoo's terms
+# and conditions. See http://quote.yahoo.co.jp/ for more details.
 
 package Finance::Quote::YahooJapan;
 
