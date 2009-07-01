@@ -85,9 +85,11 @@ sub _scrape($;@) {
 # Determines the date of a quote.
 sub _determine_date($;) {
     my ($date, @now) = (shift, localtime);
-    if ($date =~ /\d{1,2}\/\d{1,2}/) {
+    if ($date =~ /(\d{1,2})\/(\d{1,2})/) {
         # MM/DD
-        return $date . '/' . ($now[5] + 1900);
+        my ($yyyy, $mm, $dd) = ($now[5] + 1900, $1, $2);
+        $yyyy-- if ($now[4] + 1 < $mm); # MM may point last December in January.
+        return sprintf '%04d-%02d-%02d', $yyyy, $mm, $dd;
     } else {
         return '0000-00-00';
     }
