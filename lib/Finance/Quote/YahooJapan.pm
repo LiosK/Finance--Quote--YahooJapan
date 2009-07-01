@@ -35,7 +35,9 @@ sub yahoo_japan {
 
     # A request can contain less than 51 symbols.
     while (my @syms = splice @symbols, 0, 50) {
-        my $url = $YAHOO_JAPAN_URL . '?s=' . join '+', @syms;
+        # The URL searchs the symbol (s), name (n), last trade date (d1),
+        # and last price (l1) of the stocks or funds specified by @syms.
+        my $url = $YAHOO_JAPAN_URL . '?f=snd1l1&s=' . join '+', @syms;
         my $reply = $ua->request(GET $url);
         if ($reply->is_success) {
             # The way to extract quotes from a HTTP response is defined in
@@ -60,7 +62,7 @@ sub _scrape($;@) {
 
     foreach my $row (@table) {
         $row =~ s/&nbsp;|<[^>]+?>/ /g;  # Stripping tags and NBSPs.
-        my (undef, $sym, undef, $name, $date, $price) = split /\s+/, $row;
+        my (undef, $sym, $name, $date, $price) = split /\s+/, $row;
 
         # Formats data.
         $price =~ s/,//g;   # TODO
