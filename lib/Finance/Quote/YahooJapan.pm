@@ -12,7 +12,6 @@ use strict;
 use warnings;
 use utf8;
 use HTTP::Request::Common;
-use Encode qw/encode decode/;
 
 our $VERSION = '0.1';
 
