@@ -13,16 +13,18 @@ use warnings;
 use utf8;
 use HTTP::Request::Common;
 
-our $VERSION = '0.1';
+our $VERSION = '0.2';
 
 our $YAHOO_JAPAN_URL = 'http://quote.yahoo.co.jp/q';
+
+our $_ERROR_DATE = '0000-00-00';
 
 sub methods {
     return (yahoo_japan => \&yahoo_japan);
 }
 
 sub labels {
-    return (yahoo_japan => ['method', 'success', 'name', 'date', 'currency', 'price']);
+    return (yahoo_japan => ['method', 'success', 'name', 'date', 'time', 'currency', 'price']);
 }
 
 sub yahoo_japan {
@@ -34,9 +36,10 @@ sub yahoo_japan {
 
     # A request can contain less than 51 symbols.
     while (my @syms = splice @symbols, 0, 50) {
-        # The URL searchs the symbol (s), name (n), last trade date (d1),
-        # and last price (l1) of the stocks or funds specified by @syms.
-        my $url = $YAHOO_JAPAN_URL . '?f=snd1l1&s=' . join '+', @syms;
+        # The URL searchs the symbol (s), name (n), last trade date (d1), last
+        # trade time (d3) and last price (l1) of the stocks or funds specified
+        # by @syms.
+        my $url = $YAHOO_JAPAN_URL . '?f=snd1d3l1&s=' . join '+', @syms;
         my $reply = $ua->request(GET $url);
         if ($reply->is_success) {
             # The way to extract quotes from a HTTP response is defined in
@@ -61,20 +64,24 @@ sub _scrape($;@) {
 
     foreach my $row (@table) {
         $row =~ s/&nbsp;|<[^>]+?>/ /g;  # Stripping tags and NBSPs.
-        my (undef, $sym, $name, $date, $price) = split /\s+/, $row;
+        my (undef, $sym, $name, $date, $time, $price) = split /\s+/, $row;
 
         # Formats data.
-        $price =~ s/,//g;   # TODO
-        $date = _determine_date($date);
+        $price =~ tr/0-9//cd;
+        $date = _parse_date($date);
+        $time = _parse_time($time);
 
         # Validates data.
-        # TODO
+        my $success = 1;
+        $success = 0 if ($price eq '');
+        $success = 0 if ($date eq $_ERROR_DATE);
 
-        $info{$sym, 'success'}  = 1;
+        $info{$sym, 'success'}  = $success;
         $info{$sym, 'currency'} = 'JPY';
         $info{$sym, 'method'}   = 'yahoo_japan';
         $info{$sym, 'name'}     = $name;
         $info{$sym, 'date'}     = $date;
+        $info{$sym, 'time'}     = $time;
         $info{$sym, 'price'}    = $price;
     }
 
@@ -82,7 +89,7 @@ sub _scrape($;@) {
 }
 
 # Determines the date of a quote.
-sub _determine_date($;) {
+sub _parse_date($;) {
     my ($date, @now) = (shift, localtime);
     if ($date =~ /(\d{1,2})\/(\d{1,2})/) {
         # MM/DD
@@ -90,7 +97,18 @@ sub _determine_date($;) {
         $yyyy-- if ($now[4] + 1 < $mm); # MM may point last December in January.
         return sprintf '%04d-%02d-%02d', $yyyy, $mm, $dd;
     } else {
-        return '0000-00-00';
+        return $_ERROR_DATE;
+    }
+}
+
+# Determines the time of a quote.
+sub _parse_time($;) {
+    my $time = shift;
+    if ($time =~ /(\d{1,2}):(\d{1,2})/) {
+        # HH:MM
+        return sprintf '%02d:%02d:00', $1, $2;
+    } else {
+        return '15:00:00';  # XXX
     }
 }
 
