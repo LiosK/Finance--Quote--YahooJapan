@@ -1,0 +1,28 @@
+=head1 NAME
+
+Finance::Quote::YahooJapan - A Perl module that enables GnuCash to get quotes of Japanese stocks and funds from Yahoo! JAPAN.
+
+=head1 DESCRIPTION
+
+Finance::Quote::YahooJapan is a submodule of Finance::Quote, adds support for Japanese stock and mutual fund quotes.
+It allows GnuCash to fetch these quotes from Yahoo! Finance JAPAN L<http://finance.yahoo.co.jp/> with online price update feature.
+
+See my blog article for more detailed information: L<http://liosk.blog103.fc2.com/blog-entry-185.html> (ja)
+
+=head1 USAGE
+
+=head2 1. Install Finance::Quote
+
+Install and setup Finance::Quote module as explained in the GnuCash Help Manual: L<http://svn.gnucash.org/docs/help/acct-create.html#Online-price-setup>
+
+=head2 2. Install Finance::Quote::YahooJapan
+
+a. Locate the directory where Finance::Quote is installed and then put the submodule file F<YahooJapan.pm> at F<Finance/Quote/YahooJapan.pm>.
+
+b. Set the C<FQ_LOAD_QUOTELET> environment variable to C<-defaults YahooJapan> so Finance::Quote will load Finance::Quote::YahooJapan as its submodule.
+
+=head2 3. Setup GnuCash Online Quote Feature
+
+Launch GnuCash and setup your securities as explained in the Manual: L<http://svn.gnucash.org/docs/help/acct-create.html#Online-price-setup>
+
+=cut
