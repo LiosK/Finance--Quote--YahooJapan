@@ -13,7 +13,7 @@ use warnings;
 use utf8;
 use HTTP::Request::Common;
 
-our $VERSION = '0.2';
+our $VERSION = '0.3';
 
 our $YAHOO_JAPAN_URL = 'http://quote.yahoo.co.jp/q';
 
@@ -63,18 +63,18 @@ sub _scrape($;@) {
     my @table = grep /^<td/, split /\x0D?\x0A/, $content;
 
     foreach my $row (@table) {
-        $row =~ s/&nbsp;|<[^>]+?>/ /g;  # Stripping tags and NBSPs.
-        my (undef, $sym, $name, $date, $time, $price) = split /\s+/, $row;
+        my @cells = split /(?:&nbsp;|<[^>]+?>)+/, $row;
+        my (undef, $sym, $name, $date, $time, $price) = @cells;
 
         # Formats data.
-        $price =~ tr/0-9//cd;
-        $date = _parse_date($date);
-        $time = _parse_time($time);
+        $price =~ tr/0-9//cd if (defined $price);
+        $date = _parse_date($date) if (defined $date);
+        $time = _parse_time($time) if (defined $time);
 
         # Validates data.
         my $success = 1;
-        $success = 0 if ($price eq '');
-        $success = 0 if ($date eq $_ERROR_DATE);
+        $success = 0 if (!defined $price || $price eq '');
+        $success = 0 if (!defined $date || $date eq $_ERROR_DATE);
 
         $info{$sym, 'success'}  = $success;
         $info{$sym, 'currency'} = 'JPY';
@@ -83,6 +83,7 @@ sub _scrape($;@) {
         $info{$sym, 'date'}     = $date;
         $info{$sym, 'time'}     = $time;
         $info{$sym, 'price'}    = $price;
+        $info{$sym, 'errormsg'} = $success ? '' : $row;
     }
 
     return %info;
