@@ -14,13 +14,10 @@ use utf8;
 use HTTP::Request::Common;
 use Web::Scraper;
 use YAML;
-#use Data::Dumper;
-#use diagnostics;
 
 our $VERSION = '0.4';
 
-our $YAHOO_JAPAN_SEARCH_URL = 'http://info.finance.yahoo.co.jp/search';
-our	$YAHOO_JAPAN_URL = 'http://stocks.finance.yahoo.co.jp/stocks/detail';
+our	$YAHOO_JAPAN_URL = 'http://info.finance.yahoo.co.jp/search';
 our $_ERROR_DATE = '0000-00-00';
 
 sub methods {
@@ -44,11 +41,11 @@ sub yahoo_japan {
 	while (my @syms = splice @symbols, 0, 50) {
 		$paging = 1;
 		for ($page = 1; $paging == 1; $page++) {
-			$url = $YAHOO_JAPAN_SEARCH_URL . '/?ei=UTF-8&view=l1&p=' . $page . '&query=' . join '+', @syms;
+			$url = $YAHOO_JAPAN_URL . '/?ei=UTF-8&view=l1&p=' . $page . '&query=' . join '+', @syms;
 			my $reply = $ua->request(GET $url);
 			if ($reply->is_success) {
 				my $attrs = _get_page_attrs($reply->content);
-				if ($attrs->{single} eq '') {
+				if ($attrs->{single} ne '') {
 					%info = (%info, _web_scrape_single($reply->content, @syms));
 				} else {
 					%info = (%info, _web_scrape($reply->content, @syms));
@@ -59,28 +56,11 @@ sub yahoo_japan {
 			} else {
 				$paging = 0;
 			}
-			print "next page is " . $paging . "\n";
 		} 
 	}
 	
     return %info if wantarray;
     return \%info;
-}
-
-sub _is_paging($;@) {
-	my ($content) = @_;
-
-	my $tree = HTML::TreeBuilder->new;
-	$tree->utf8_mode(1);
-	$tree->parse($content);
-
-	my @links = $tree->look_down('class', 'ymuiPagingTop yjSt clearFix')->find('a');
-
-	foreach my $link (@links) {
-		print "link is: " . $link->as_text . "\n";
-	}
-	$tree->delete();
-	return 0;
 }
 
 sub _get_page_attrs($;@) {
@@ -102,7 +82,7 @@ sub _get_page_attrs($;@) {
 #	my $value = $tree->look_down('id', 'divAddPortfolio');
 	my $single_element = $tree->look_down('id', 'divAddPortfolio');
 	if (defined  $single_element) {
-		$single = $single_element->as_text;
+		$single = 'single';
 	}
 	my $next_element = $tree->look_down('class', 'ymuiPagingTop yjSt clearFix');
 	my @link_elements = $next_element->find('a') if (defined $next_element);
@@ -237,20 +217,11 @@ sub _web_scrape_by_parse($;@) {
 	$tree->parse($content);
 	$tree->eof();
 
-#	#my $elements = $tree->look_down('id', '_tablestripe_autoid_0');
 	my $tableLine = $tree->look_down('class', 'selectLine');
 	my @elements = $tableLine->find('tr') if (defined $tableLine);
-#	my @elements = $tree->look_down('class', 'selectLine')->find('tr');
 	foreach my $element (@elements) {
 		my @row = $element->find('td');
 		if (defined($row[0])) {
-#			print "row 0: " . $row[0]->as_text . "\n";
-#			print "row 1: " . $row[1]->as_text . "\n";
-#			print "row 2: " . $row[2]->as_text . "\n";
-#			print "row 3: " . $row[3]->as_text . "\n";
-#			print "row 4: " . $row[4]->as_text . "\n";
-#			print "row 5: " . $row[5]->as_text . "\n";
-#			print "row 6: " . $row[6]->as_text . "\n";
 			my $stock_info = {
 				code => $row[0]->as_text,
 				name => $row[2]->as_text,
