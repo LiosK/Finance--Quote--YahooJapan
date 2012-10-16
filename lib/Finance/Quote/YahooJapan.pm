@@ -12,8 +12,6 @@ use strict;
 use warnings;
 use utf8;
 use HTTP::Request::Common;
-use Web::Scraper;
-use YAML;
 
 our $VERSION = '0.4';
 
@@ -31,17 +29,16 @@ sub labels {
 sub yahoo_japan {
     my ($quoter, @symbols) = @_;
     return unless @symbols; # Nothing if no symbols.
-    my ($url, $page, $paging);
     my %info = ();
     my $ua = $quoter->user_agent;
     my @syms = ();
 
-    $page = 1;
-    # A request can contain less than 51 symbols.
-    while (my @syms = splice @symbols, 0, 50) {
-        $paging = 1;
-        for ($page = 1; $paging == 1; $page++) {
-            $url = $YAHOO_JAPAN_URL . '/?ei=UTF-8&view=l1&p=' . $page . '&query=' . join '+', @syms;
+    my $page = 1;
+    # limit the number of symbols a request contains
+    while (my @syms = splice @symbols, 0, 30) {
+        my $paging = 1;
+        for (my $page = 1; $paging == 1; $page++) {
+            my $url = $YAHOO_JAPAN_URL . '/?ei=UTF-8&view=l1&p=' . $page . '&query=' . join '+', @syms;
             my $reply = $ua->request(GET $url);
             if ($reply->is_success) {
                 my $attrs = _get_page_attrs($reply->content);
@@ -67,19 +64,11 @@ sub _get_page_attrs($;@) {
     my ($content) = @_;
     my ($single, $next) = ('', '');
 
-#    my $scraper = scraper {
-#        process '//*[@id="divAddPortfolio"', 'add' => 'TEXT';
-#        process '/html/body/div/div[2]/div[2]/div/div[2]/div/div', 'add' => '@id';
-#    };
-
-#    return defined($result->{add});
-
     my $tree = HTML::TreeBuilder->new;
     $tree->utf8_mode(1);
     $tree->parse($content);
     $tree->eof();
 
-#    my $value = $tree->look_down('id', 'divAddPortfolio');
     my $single_element = $tree->look_down('id', 'divAddPortfolio');
     if (defined  $single_element) {
         $single = 'single';
@@ -109,7 +98,6 @@ sub _web_scrape_single($;@) {
     my %info = ();
     my %stocks = ();
 
-#    %stocks = _web_scrape_single_by_scraper($content, $symbol);
     %stocks = _web_scrape_single_by_parse($content, $symbol);
 
     $info{$symbol, 'symbol'} = $symbol;
@@ -125,30 +113,6 @@ sub _web_scrape_single($;@) {
     $info{$symbol, 'errormsg'} = '';
 
     return %info;
-}
-
-sub _web_scrape_single_by_scraper($;@) {
-    my ($content, $symbol) = @_;
-    my %stocks = ();
-
-    my $scraper = scraper {
-        process '//dl[@class="stocksInfo"]//dt', 'stock', => 'TEXT';
-        process '//td[@class="stoksPrice"]', 'price' => 'TEXT';
-        process '//th[@class="symbol"]//h1', 'name' => 'TEXT';
-        process '//dd[@class="yjSb real"]//span', 'date' => 'TEXT';
-    };
-    my $result = $scraper->scrape($content);
-
-    my $stock_info = {
-        code => $result->{stock},
-        name => $result->{name},
-        price => $result->{price},
-        date => _get_date($result->{date}),
-        time => _get_time($result->{date})
-    };
-
-    $stocks{$symbol} = $stock_info;
-    return %stocks;
 }
 
 sub _web_scrape_single_by_parse($;@) {
@@ -183,7 +147,6 @@ sub _web_scrape($;@) {
     my %info = ();
     my %stocks = ();
 
-#    %stocks = _web_scrape_by_scraper($content, @symbols);
     %stocks = _web_scrape_by_parse($content, @symbols);
 
     foreach my $symbol (@symbols) {
@@ -201,10 +164,6 @@ sub _web_scrape($;@) {
             $info{$symbol, 'errormsg'} = '';
         }
     }
-
-#    foreach my $code (keys(%stocks)) {
-#        print "stocks is : " . $stocks{$code}->{name} . "\n";
-#    }
 
     return %info;
 }
@@ -234,35 +193,6 @@ sub _web_scrape_by_parse($;@) {
     }
     # detach memory
     $tree->delete();
-    return %stocks;
-}
-
-# Web::Scraper
-sub _web_scrape_by_scraper($;@) {
-    my ($content, @symbols) = @_;
-    my ($i, $j, @array);
-    my %stocks = ();
-    my $scraper = scraper {
-        process '/html/body/div/div[2]/div[2]/div[1]/div[2]/table/tr', 'list[]' => scraper {
-            process 'td', 'val[]' => 'TEXT';
-        }
-    };
-    my $result = $scraper->scrape($content);
-
-    # skip for header line(<th>)
-    for ($i = 1; $i < scalar @{$result->{list}} -1; $i++) {
-        # dereference from hash.
-        @array = @{$result->{list}->[$i]->{val}};
-
-        my $stock_info = {
-            code => $array[0],
-            name => $array[2],
-            price => $array[4],
-            date => _get_date($array[3]),
-            time => _get_time($array[3])
-        };
-        $stocks{$array[0]} = $stock_info;
-    }
     return %stocks;
 }
 
@@ -298,43 +228,6 @@ sub _get_time($;@) {
         $time = '15:00:00';
     }
     return $time;
-}
-
-# Scrapes quotes from a HTML text.
-sub _scrape($;@) {
-    my ($content, @symbols) = @_;
-    my %info = ();
-
-    # Extracts price list table.
-    # XXX: Using an ugly, inflexible and unsophisticated algorithm.
-    ($content) = $content =~ /<tr class=chartbg>(.+?)<\/table>/s;
-    my @table = grep /^<td/, split /\x0D?\x0A/, $content;
-
-    foreach my $row (@table) {
-        my @cells = split /(?:&nbsp;|<[^>]+?>)+/, $row;
-        my (undef, $sym, $name, $date, $time, $price) = @cells;
-
-        # Formats data.
-        $price =~ tr/0-9//cd if (defined $price);
-        $date = _parse_date($date) if (defined $date);
-        $time = _parse_time($time) if (defined $time);
-
-        # Validates data.
-        my $success = 1;
-        $success = 0 if (!defined $price || $price eq '');
-        $success = 0 if (!defined $date || $date eq $_ERROR_DATE);
-
-        $info{$sym, 'success'}  = $success;
-        $info{$sym, 'currency'} = 'JPY';
-        $info{$sym, 'method'}   = 'yahoo_japan';
-        $info{$sym, 'name'}     = $name;
-        $info{$sym, 'date'}     = $date;
-        $info{$sym, 'time'}     = $time;
-        $info{$sym, 'price'}    = $price;
-        $info{$sym, 'errormsg'} = $success ? '' : $row;
-    }
-
-    return %info;
 }
 
 # Determines the date of a quote.
