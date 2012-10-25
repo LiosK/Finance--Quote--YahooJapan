@@ -64,8 +64,8 @@ sub yahoo_japan {
 }
 
 sub _get_page_attrs($;@) {
-	my ($content, $current_page) = @_;
-	my ($single, $next) = ('', '');
+    my ($content, $current_page) = @_;
+    my ($single, $next) = ('', '');
 
 #	my $scraper = scraper {
 #		process '//*[@id="divAddPortfolio"', 'add' => 'TEXT';
@@ -74,37 +74,37 @@ sub _get_page_attrs($;@) {
 	
 #	return defined($result->{add});
 
-	my $tree = HTML::TreeBuilder->new;
-	$tree->utf8_mode(1);
-	$tree->parse($content);
-	$tree->eof();
+    my $tree = HTML::TreeBuilder->new;
+    $tree->utf8_mode(1);
+    $tree->parse($content);
+    $tree->eof();
 
 #	my $value = $tree->look_down('id', 'divAddPortfolio');
-	my $single_element = $tree->look_down('id', 'divAddPortfolio');
-	if (defined  $single_element) {
-		$single = 'single';
-	}
-	my $next_element = $tree->look_down('class', 'ymuiPagingBottom clearFix');
+    my $single_element = $tree->look_down('id', 'divAddPortfolio');
+    if (defined  $single_element) {
+        $single = 'single';
+    }
+    my $next_element = $tree->look_down('class', 'ymuiPagingBottom clearFix');
 
-	# when find next page link, go next page.
-	my @pagination = $next_element->find('a') if (defined $next_element);
-	foreach my $pageNum (@pagination) {
-		if ($pageNum->as_text =~ /^\d+$/) {
-			if ($pageNum->as_text == $current_page + 1) {
-				$next = 'next';
-				last;
-			} else {
-				$next = '';
-			}
-		}
-	}
+    # when find next page link, go next page.
+    my @pagination = $next_element->find('a') if (defined $next_element);
+    foreach my $pageNum (@pagination) {
+        if ($pageNum->as_text =~ /^\d+$/) {
+            if ($pageNum->as_text == $current_page + 1) {
+                $next = 'next';
+                last;
+            } else {
+                $next = '';
+            }
+        }
+    }
 
-	my $attrs = {
-		single => $single,
-		next => $next
-	};
-	$tree->delete();
-	return $attrs;
+    my $attrs = {
+        single => $single,
+        next => $next
+    };
+    $tree->delete();
+    return $attrs;
 }
 
 # scarpe single 
