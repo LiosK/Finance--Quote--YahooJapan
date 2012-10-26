@@ -41,7 +41,7 @@ sub yahoo_japan {
             my $url = $YAHOO_JAPAN_URL . '/?ei=UTF-8&view=l1&p=' . $page . '&query=' . join '+', @syms;
             my $reply = $ua->request(GET $url);
             if ($reply->is_success) {
-                my $attrs = _get_page_attrs($reply->content);
+                my $attrs = _get_page_attrs($reply->content, $page);
                 if ($attrs->{single} ne '') {
                     %info = (%info, _web_scrape_single($reply->content, @syms));
                 } else {
@@ -61,7 +61,7 @@ sub yahoo_japan {
 }
 
 sub _get_page_attrs($;@) {
-    my ($content) = @_;
+    my ($content, $current_page) = @_;
     my ($single, $next) = ('', '');
 
     my $tree = HTML::TreeBuilder->new;
@@ -73,17 +73,21 @@ sub _get_page_attrs($;@) {
     if (defined  $single_element) {
         $single = 'single';
     }
-    my $next_element = $tree->look_down('class', 'ymuiPagingTop yjSt clearFix');
-    my @link_elements = $next_element->find('a') if (defined $next_element);
+    my $next_element = $tree->look_down('class', 'ymuiPagingBottom clearFix');
 
-    # scalar value of link_elements is greater than 1 when has prev and next page.
-    # it might have next page when value is 1. i don't want to compare japanese.
-    # next_element is undef when not found data now. (just adhok implements)
-    if (scalar @link_elements > 1) {
-        $next = 'next';
-    } elsif (scalar @link_elements == 1) {
-        $next = 'next';
+    # when find next page link, go next page.
+    my @pagination = $next_element->find('a') if (defined $next_element);
+    foreach my $pageNum (@pagination) {
+        if ($pageNum->as_text =~ /^\d+$/) {
+            if ($pageNum->as_text == $current_page + 1) {
+                $next = 'next';
+                last;
+            } else {
+                $next = '';
+            }
+        }
     }
+
     my $attrs = {
         single => $single,
         next => $next
