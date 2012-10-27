@@ -48,7 +48,7 @@ sub yahoo_japan {
             my $tree = HTML::TreeBuilder->new_from_content($reply->content);
             my %quotes = _scrape($tree);
             my $has_next_page = _has_next_page($tree, 1);
-            $tree->delete;  # detach memory
+            $tree = $tree->delete;  # detach memory
 
             for my $sym (@syms) {
                 next if ($info{$sym, 'success'});
@@ -75,7 +75,7 @@ sub yahoo_japan {
                 my $tree = HTML::TreeBuilder->new_from_content($reply->content);
                 %quotes = (%quotes, _scrape($tree));
                 my $has_next_page = _has_next_page($tree, $page);
-                $tree->delete;  # detach memory
+                $tree = $tree->delete;  # detach memory
 
                 last if (!$has_next_page);
             }
@@ -98,8 +98,7 @@ sub yahoo_japan {
 
 # Tests if a list page has the next page of it.
 sub _has_next_page {
-    my $tree = shift;
-    my $current_page = shift;
+    my ($tree, $current_page) = @_;
 
     my $elm_paging = $tree->look_down('class', 'ymuiPagingBottom clearFix');
     if (defined $elm_paging) {
@@ -116,14 +115,21 @@ sub _has_next_page {
 sub _convert_quote {
     my ($sym, $quote) = @_;
     my %info = ();
-    $info{$sym, 'success'}  = 1;
     $info{$sym, 'currency'} = 'JPY';
     $info{$sym, 'method'}   = 'yahoo_japan';
     $info{$sym, 'name'}     = $quote->{'name'};
     $info{$sym, 'date'}     = $quote->{'date'};
     $info{$sym, 'time'}     = $quote->{'time'};
     $info{$sym, 'price'}    = $quote->{'price'};
-    $info{$sym, 'errormsg'} = '';
+
+    # validate quote.
+    my @errors = ();
+    push @errors, 'Invalid name.' if ($info{$sym, 'name'} =~ /^\s*$/);
+    push @errors, 'Invalid price.' if ($info{$sym, 'price'} eq '');
+
+    $info{$sym, 'errormsg'} = join ' / ', @errors;
+    $info{$sym, 'success'}  = $info{$sym, 'errormsg'} ? 0 : 1;
+
     return %info;
 }
 
