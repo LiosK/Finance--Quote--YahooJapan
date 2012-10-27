@@ -16,7 +16,10 @@ use HTTP::Request::Common;
 our $VERSION = '0.4';
 
 our $YAHOO_JAPAN_URL = 'http://info.finance.yahoo.co.jp/search';
+
 our $_ERROR_DATE = '0000-00-00';
+
+our $_N_SYMBOLS_PER_REQUEST = 30;
 
 sub methods {
     return (yahoo_japan => \&yahoo_japan);
@@ -28,14 +31,14 @@ sub labels {
 
 sub yahoo_japan {
     my ($quoter, @symbols) = @_;
-    return unless @symbols; # Nothing if no symbols.
+    return unless @symbols; # do nothing if no symbols.
+
     my %info = ();
     my $ua = $quoter->user_agent;
-    my @syms = ();
 
     my $page = 1;
-    # limit the number of symbols a request contains
-    while (my @syms = splice @symbols, 0, 30) {
+    # limit the number of symbols a request contains.
+    while (my @syms = splice @symbols, 0, $_N_SYMBOLS_PER_REQUEST) {
         my $paging = 1;
         for (my $page = 1; $paging == 1; $page++) {
             my $url = $YAHOO_JAPAN_URL . '/?ei=UTF-8&view=l1&p=' . $page . '&query=' . join '+', @syms;
@@ -216,7 +219,7 @@ sub _get_date($;@) {
 
 sub _get_time($;@) {
     my ($value) = @_;
-    my ($time);
+    my $time = '15:00:00';
 
     if (defined $value) {
         if (index($value, '/') != -1) {
@@ -224,8 +227,6 @@ sub _get_time($;@) {
         } else {
             $time = _parse_time($value);
         }
-    } else {
-        $time = '15:00:00';
     }
     return $time;
 }
