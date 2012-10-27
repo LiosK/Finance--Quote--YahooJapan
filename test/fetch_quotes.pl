@@ -29,6 +29,18 @@ my @symbols = qw/30_stocks
                  1625 1626 1627 1628 1629 1630 1631 1632 1633 1634
                  /;
 
+# target securities passed as command line arguments
+if (@ARGV) {
+    my ($head, @tail) = @ARGV;
+    if ($head eq '--replace') {
+        @symbols = @tail;
+    } elsif ($head eq '--append') {
+        push @symbols, @tail;
+    } else {
+        push @symbols, @ARGV;
+    }
+}
+
 # fetch and print quotes
 my $q = Finance::Quote->new('-defaults', 'YahooJapan')->yahoo_japan(@symbols);
 
