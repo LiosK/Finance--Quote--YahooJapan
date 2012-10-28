@@ -45,6 +45,7 @@ if (@ARGV) {
 my $q = Finance::Quote->new('-defaults', 'YahooJapan')->yahoo_japan(@symbols);
 
 my @fields = qw/success currency method name date time price errormsg/;
+print join("\t", 'symbol', @fields), "\n";
 for my $sym (@symbols) {
   print join("\t", $sym, map { $q->{$sym, $_} // 'N/A' } @fields), "\n";
 }

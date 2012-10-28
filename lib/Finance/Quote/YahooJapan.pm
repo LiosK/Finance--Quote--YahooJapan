@@ -27,7 +27,8 @@ sub methods {
 }
 
 sub labels {
-    return (yahoo_japan => ['method', 'success', 'name', 'date', 'time', 'currency', 'price', 'errormsg']);
+    return (yahoo_japan => ['method', 'success', 'symbol', 'name',
+                            'date', 'time', 'currency', 'price', 'errormsg']);
 }
 
 sub yahoo_japan {
@@ -58,6 +59,7 @@ sub yahoo_japan {
                     push @retry_later, $sym;
                 } else {
                     $info{$sym, 'success'}  = 0;
+                    $info{$sym, 'symbol'}   = $sym;
                     $info{$sym, 'method'}   = 'yahoo_japan';
                     $info{$sym, 'errormsg'} = 'Requested quote not found.';
                 }
@@ -86,6 +88,7 @@ sub yahoo_japan {
                 %info = (%info, _convert_quote($sym, $quotes{$sym}));
             } else {
                 $info{$sym, 'success'}  = 0;
+                $info{$sym, 'symbol'}   = $sym;
                 $info{$sym, 'method'}   = 'yahoo_japan';
                 $info{$sym, 'errormsg'} = 'Requested quote not found.';
             }
@@ -115,6 +118,7 @@ sub _has_next_page {
 sub _convert_quote {
     my ($sym, $quote) = @_;
     my %info = ();
+    $info{$sym, 'symbol'}   = $sym;
     $info{$sym, 'currency'} = 'JPY';
     $info{$sym, 'method'}   = 'yahoo_japan';
     $info{$sym, 'name'}     = $quote->{'name'};
