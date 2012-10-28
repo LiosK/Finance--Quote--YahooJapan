@@ -17,10 +17,10 @@ use HTTP::Request::Common;
 our $VERSION = '0.4';
 
 # The maximum number of symbols a search query can contain.
-our $_N_SYMBOLS_PER_QUERY = 30;
+our $N_Symbols_Per_Query = 30;
 
 # The maximum number of pages to follow.
-our $_N_PAGES_PER_QUERY = 3;
+our $N_Pages_Per_Query = 3;
 
 sub methods {
     return (yahoo_japan => \&yahoo_japan);
@@ -42,7 +42,7 @@ sub yahoo_japan {
     my @retry_later = ();
 
     # initial trial loop: ignore page links.
-    while (my @syms = splice @symbols, 0, $_N_SYMBOLS_PER_QUERY) {
+    while (my @syms = splice @symbols, 0, $N_Symbols_Per_Query) {
         my $url = $url_base . '&query=' . join '+', @syms;
         my $reply = $ua->request(GET $url);
         if ($reply->is_success) {
@@ -68,10 +68,10 @@ sub yahoo_japan {
     }
 
     # retry loop: follow page links.
-    while (my @syms = splice @retry_later, 0, $_N_SYMBOLS_PER_QUERY) {
+    while (my @syms = splice @retry_later, 0, $N_Symbols_Per_Query) {
         my %quotes = ();
         my $url = $url_base . '&query=' . join '+', @syms;
-        for (my $page = 1; $page <= $_N_PAGES_PER_QUERY; $page++) {
+        for (my $page = 1; $page <= $N_Pages_Per_Query; $page++) {
             my $reply = $ua->request(GET $url . '&p=' . $page);
             if ($reply->is_success) {
                 my $tree = HTML::TreeBuilder->new_from_content($reply->content);
