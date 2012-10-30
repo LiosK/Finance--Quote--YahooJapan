@@ -25,4 +25,12 @@ b. Set the C<FQ_LOAD_QUOTELET> environment variable to C<-defaults YahooJapan> s
 
 Launch GnuCash and setup your securities as explained in the Manual: L<http://svn.gnucash.org/docs/help/acct-create.html#Online-price-setup>
 
+=head1 LIMITATIONS
+
+Since the behavior change of Yahoo! Finance JAPAN's stock price search, which drove the development of Finance::Quote::YahooJapan Version 0.4, FQ_YahooJapan no longer returns correct answers in some specific cases. Before the change Yahoo returned the securities exactly matched to the ticker symbols in a search query, but now Yahoo returns far more securities that are partially matched to. So it became difficult to determine whether a missing security doesn't exist or is contained in the following paginated result pages.
+
+FQ_YahooJapan follows page links to find missing target securities, but it examines a limited number of pages (3 pages by default) to avoid sending too many requests and taking too much time. This algorithm works well in ordinary use cases. But if a query contains some simple symbols such as "1" and "T", Yahoo returns so many unrelated securities that FQ_YahooJapan can't find other target securities in the query.
+
+When you find FQ_YahooJapan returning "not found" errors on the existing securities, check your query and remove too simple symbols to avoid the problem. Or you can order FQ_YahooJapan to follow page links more eagerly by calling class method C<Finance::Quote::YahooJapan-E<gt>n_pages_per_query($number)>, but it's not recommended because it can cause an undesirable increase of the network load.
+
 =cut
