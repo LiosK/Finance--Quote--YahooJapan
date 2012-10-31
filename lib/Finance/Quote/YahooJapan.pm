@@ -44,6 +44,9 @@ sub yahoo_japan {
     # initial trial loop: ignore page links.
     while (my @syms = splice @symbols, 0, $n_symbols_per_query) {
         my $url = $url_base . '&query=' . join '+', @syms;
+        # XXX an effort to avoid single pages.
+        $url .= '+8411' if (@syms < 5 && @syms < $n_symbols_per_query);
+
         my $reply = $ua->request(GET $url);
         if ($reply->is_success) {
             my $tree = HTML::TreeBuilder->new_from_content($reply->content);
@@ -71,6 +74,9 @@ sub yahoo_japan {
     while (my @syms = splice @retry_later, 0, $n_symbols_per_query) {
         my %quotes = ();
         my $url = $url_base . '&query=' . join '+', @syms;
+        # XXX an effort to avoid single pages.
+        $url .= '+8411' if (@syms < 5 && @syms < $n_symbols_per_query);
+
         for (my $page = 1; $page <= $n_pages_per_query; $page++) {
             my $reply = $ua->request(GET $url . '&p=' . $page);
             if ($reply->is_success) {
@@ -177,6 +183,11 @@ sub _scrape_single_page {
         time  => _parse_time($elm_datetime->as_text)
     };
     $stock_info->{'price'} =~ tr/0-9//cd;
+
+    if ($stock_info->{'price'} eq '') {
+        # TODO need previous last price when current price is unavailable.
+    }
+
     return ($sym => $stock_info);
 }
 
@@ -207,7 +218,7 @@ sub _scrape_list_page {
 sub _parse_date($;) {
     my $date = shift;
     my @now = localtime;
-    my ($yyyy, $mm, $dd) = ($now[5] + 1900, $now[4] + 1, $now[3]);  # XXX
+    my ($yyyy, $mm, $dd) = ($now[5] + 1900, $now[4] + 1, $now[3]);
 
     if ($date =~ /(\d{1,2})\/(\d{1,2})/) {
         # MM/DD
