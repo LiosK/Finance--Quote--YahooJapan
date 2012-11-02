@@ -150,6 +150,7 @@ sub _convert_quote {
     my @errors = ();
     push @errors, 'Invalid name.' if ($info{$sym, 'name'} =~ /^\s*$/);
     push @errors, 'Invalid price.' if ($info{$sym, 'price'} eq '');
+    push @errors, 'Invalid datetime.' if ($info{$sym, 'date'} eq '');
 
     $info{$sym, 'errormsg'} = join ' / ', @errors;
     $info{$sym, 'success'}  = $info{$sym, 'errormsg'} ? 0 : 1;
@@ -176,11 +177,12 @@ sub _scrape_single_page {
     my $elm_datetime = $tree->look_down('class', 'yjSb real')->find('span');
 
     my $sym = $elm_code->as_text;
+    my ($date, $time) = _parse_datetime($elm_datetime->as_text);
     my $stock_info = {
         name  => $elm_name->as_text,
         price => $elm_price->as_text,
-        date  => _parse_date($elm_datetime->as_text),
-        time  => _parse_time($elm_datetime->as_text)
+        date  => $date,
+        time  => $time
     };
     $stock_info->{'price'} =~ tr/0-9//cd;
 
@@ -200,11 +202,12 @@ sub _scrape_list_page {
         for my $tr ($elm_table->find('tr')) {
             if (my @row = $tr->find('td')) {
                 my $sym = $row[0]->as_text;
+                my ($date, $time) = _parse_datetime($row[3]->as_text);
                 $quotes{$sym} = {
                     name  => $row[2]->as_text,
                     price => $row[4]->as_text,
-                    date  => _parse_date($row[3]->as_text),
-                    time  => _parse_time($row[3]->as_text)
+                    date  => $date,
+                    time  => $time
                 };
                 $quotes{$sym}->{'price'} =~ tr/0-9//cd;
             }
@@ -214,32 +217,25 @@ sub _scrape_list_page {
     return %quotes;
 }
 
-# Determines the date of a quote.
-sub _parse_date($;) {
-    my $date = shift;
+# Determines the date and time of a quote.
+sub _parse_datetime($;) {
+    my $datetime = shift;
     my @now = localtime;
-    my ($yyyy, $mm, $dd) = ($now[5] + 1900, $now[4] + 1, $now[3]);
+    my ($year, $mon, $mday, $time) = ($now[5] + 1900, 0, 0, '15:00:00');
 
-    if ($date =~ /(\d{1,2})\/(\d{1,2})/) {
-        # MM/DD
-        ($mm, $dd) = ($1, $2);
-        $yyyy-- if ($now[4] + 1 < $mm); # MM may point last December in January.
-    }
-
-    return sprintf '%04d-%02d-%02d', $yyyy, $mm, $dd;
-}
-
-# Determines the time of a quote.
-sub _parse_time($;) {
-    my $time = shift;
-    my ($hh, $mm) = (15, 0);  # XXX return 15:00:00 on error.
-
-    if ($time =~ /(\d{1,2}):(\d{1,2})/) {
+    if ($datetime =~ /(\d{1,2}):(\d{1,2})/) {
         # HH:MM
-        ($hh, $mm) = ($1, $2);
+        $time = sprintf '%02d:%02d:00', $1, $2;
+        ($mon, $mday) = ($now[4] + 1, $now[3]);
+    }
+    if ($datetime =~ /(\d{1,2})\/(\d{1,2})/) {
+        # MM/DD
+        ($mon, $mday) = ($1, $2);
+        $year-- if ($now[4] + 1 < $mon); # MM may point last December in January.
     }
 
-    return sprintf '%02d:%02d:00', $hh, $mm;
+    my $date = sprintf '%04d-%02d-%02d', $year, $mon, $mday;
+    return ($mon && $mday) ? ($date, $time) : ('', '');
 }
 
 1;
