@@ -27,8 +27,8 @@ sub methods {
 }
 
 sub labels {
-    return (yahoo_japan => ['method', 'success', 'symbol', 'name',
-                            'date', 'time', 'currency', 'price', 'errormsg']);
+    return (yahoo_japan => ['method', 'success', 'symbol', 'name', 'date',
+                            'isodate', 'time', 'currency', 'price', 'errormsg']);
 }
 
 sub yahoo_japan {
@@ -57,7 +57,7 @@ sub yahoo_japan {
             for my $sym (@syms) {
                 next if ($info{$sym, 'success'});
                 if (exists $quotes{$sym}) {
-                    %info = (%info, _convert_quote($sym, $quotes{$sym}));
+                    %info = (%info, _convert_quote($quoter, $sym, $quotes{$sym}));
                 } elsif ($has_next_page) {
                     push @retry_later, $sym;
                 } else {
@@ -91,7 +91,7 @@ sub yahoo_japan {
         for my $sym (@syms) {
             next if ($info{$sym, 'success'});
             if (exists $quotes{$sym}) {
-                %info = (%info, _convert_quote($sym, $quotes{$sym}));
+                %info = (%info, _convert_quote($quoter, $sym, $quotes{$sym}));
             } else {
                 $info{$sym, 'success'}  = 0;
                 $info{$sym, 'symbol'}   = $sym;
@@ -136,13 +136,14 @@ sub _has_next_page {
 
 # Converts an internal quote data to Finance::Quote-style one.
 sub _convert_quote {
-    my ($sym, $quote) = @_;
+    my ($quoter, $sym, $quote) = @_;
     my %info = ();
     $info{$sym, 'symbol'}   = $sym;
     $info{$sym, 'currency'} = 'JPY';
     $info{$sym, 'method'}   = 'yahoo_japan';
     $info{$sym, 'name'}     = $quote->{'name'};
     $info{$sym, 'date'}     = $quote->{'date'};
+    $info{$sym, 'isodate'}  = $quote->{'date'};
     $info{$sym, 'time'}     = $quote->{'time'};
     $info{$sym, 'price'}    = $quote->{'price'};
 
@@ -150,7 +151,11 @@ sub _convert_quote {
     my @errors = ();
     push @errors, 'Invalid name.' if ($info{$sym, 'name'} =~ /^\s*$/);
     push @errors, 'Invalid price.' if ($info{$sym, 'price'} eq '');
-    push @errors, 'Invalid datetime.' if ($info{$sym, 'date'} eq '');
+    if ($info{$sym, 'date'} eq '') {
+        push @errors, 'Invalid datetime.';
+    } else {
+        $quoter->store_date(\%info, $sym, { isodate => $info{$sym, 'date'} });
+    }
 
     $info{$sym, 'errormsg'} = join ' / ', @errors;
     $info{$sym, 'success'}  = $info{$sym, 'errormsg'} ? 0 : 1;

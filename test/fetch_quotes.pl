@@ -44,7 +44,7 @@ if (@ARGV) {
 # fetch and print quotes
 my $q = Finance::Quote->new('-defaults', 'YahooJapan')->yahoo_japan(@symbols);
 
-my @fields = qw/success currency method name date time price errormsg/;
+my @fields = qw/success currency method name isodate time price errormsg/;
 for my $sym (@symbols) {
   print join("\t", $sym, map { $q->{$sym, $_} // 'N/A' } @fields), "\n";
 }
