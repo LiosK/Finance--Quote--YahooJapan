@@ -27,7 +27,7 @@ Launch GnuCash and setup your securities as explained in the Manual: L<http://sv
 
 =head1 LIMITATIONS
 
-For stocks, you need specify the their market such as "3382.t".
+For stocks, you need specify the market such as "3382.t".
 It does not work without the specification like "3382".
 This is due to the search limitation of Yahoo Finance.
 The suffix for Nagoya is ".n", for Sapporo is ".s", for Fukuoka is ".f", and Tokyo (including JASDAQ) is ".t".
