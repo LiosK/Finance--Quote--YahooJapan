@@ -27,6 +27,11 @@ Launch GnuCash and setup your securities as explained in the Manual: L<http://sv
 
 =head1 LIMITATIONS
 
+For stocks, you need specify the their market such as "3382.t".
+It does not work without the specification like "3382".
+This is due to the search limitation of Yahoo Finance.
+The suffix for Nagoya is ".n", for Sapporo is ".s", for Fukuoka is ".f", and Tokyo (including JASDAQ) is ".t".
+
 Since the behavior change of Yahoo! Finance JAPAN's stock price search, which drove the development of Finance::Quote::YahooJapan Version 0.4, FQ_YahooJapan no longer returns correct answers in some specific cases. Before the change Yahoo returned the securities exactly matched to the ticker symbols in a search query, but now Yahoo returns far more securities that are partially matched to. So it became difficult to determine whether a missing security doesn't exist or is contained in the following paginated result pages.
 
 FQ_YahooJapan follows page links to find missing target securities, but it examines a limited number of pages (3 pages by default) to avoid sending too many requests and taking too much time. This algorithm works well in ordinary use cases. But if a query contains some simple symbols such as "1" and "T", Yahoo returns so many unrelated securities that FQ_YahooJapan can't find other target securities in the query.

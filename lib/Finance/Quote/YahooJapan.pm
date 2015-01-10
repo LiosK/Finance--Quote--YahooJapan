@@ -202,20 +202,36 @@ sub _scrape_list_page {
     my $tree = shift;
     my %quotes = ();
 
-    my $elm_table = $tree->look_down('class', 'selectLine');    # XXX
-    if (defined $elm_table) {
-        for my $tr ($elm_table->find('tr')) {
-            if (my @row = $tr->find('td')) {
-                my $sym = $row[0]->as_text;
-                my ($date, $time) = _parse_datetime($row[3]->as_text);
-                $quotes{$sym} = {
-                    name  => $row[2]->as_text,
-                    price => $row[4]->as_text,
-                    date  => $date,
-                    time  => $time
+    my $elm = $tree->look_down('id', 'sr');
+    if (defined $elm) {
+        for my $tr ($elm->look_down('class', 'stocks')) {
+            my $sym = $tr->look_down('class', 'code highlight')->as_text;
+            $sym = substr($sym, 1);
+            chop($sym);
+
+            if (length $sym == 4){
+                my $market_name = $tr->look_down('class', 'market yjSt')->as_text;
+                if ($market_name =~ '札証'){
+                    $sym .= '.s';
+                } elsif ($market_name =~ '名証'){
+                    $sym .= '.n';
+                } elsif ($market_name =~ '福証'){
+                    $sym .= '.f';
+                }else{ #JASDAQ or 東証
+                    $sym .= '.t';
                 };
-                $quotes{$sym}->{'price'} =~ tr/0-9//cd;
-            }
+            };
+
+
+            my $mytime = $tr->look_down('class', 'time')->as_text;
+            my ($date, $time) = _parse_datetime($mytime);
+            $quotes{$sym} = {
+                name  => $tr->look_down('class', 'name highlight')->as_text,
+                price => $tr->look_down('class', 'price yjXXL')->as_text,
+                date  => $date,
+                time  => $time
+            };
+            $quotes{$sym}->{'price'} =~ tr/0-9//cd;
         }
     }
 
