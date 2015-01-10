@@ -5,20 +5,19 @@ use strict;
 use warnings;
 use Finance::Quote;
 
-# list of target securities
-my @symbols = list_target_securities();
-
-# target securities passed as command line arguments
-if (@ARGV) {
-    my ($head, @tail) = @ARGV;
-    if ($head eq '--replace') {
-        @symbols = @tail;
-    } elsif ($head eq '--append') {
-        push @symbols, @tail;
+# receive target securities from command line arguments
+my @symbols = ();
+my $appends_defaults = !@ARGV;
+for my $arg (@ARGV) {
+    if ($arg eq '--defaults') {
+        $appends_defaults = 1;
     } else {
-        push @symbols, @ARGV;
+        push @symbols, $arg;
     }
 }
+
+# append default ones if necessary
+push @symbols, list_target_securities() if ($appends_defaults);
 
 # fetch and print quotes
 my $q = Finance::Quote->new('-defaults', 'YahooJapan')->yahoo_japan(@symbols);

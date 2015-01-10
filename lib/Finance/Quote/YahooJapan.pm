@@ -14,7 +14,7 @@ use utf8;
 use HTML::TreeBuilder;
 use HTTP::Request::Common;
 
-our $VERSION = '0.4';
+our $VERSION = '0.5';
 
 # The maximum number of symbols a search query can contain.
 my $n_symbols_per_query = 30;
@@ -36,16 +36,16 @@ sub yahoo_japan {
     return unless @symbols; # do nothing if no symbols.
 
     my $ua = $quoter->user_agent;
-    my $url_base = 'http://info.finance.yahoo.co.jp/search/?ei=UTF-8&view=l1';
+    my $url_base = 'http://info.finance.yahoo.co.jp/search/';
 
     my %info = ();
     my @retry_later = ();
 
     # initial trial loop: ignore page links.
     while (my @syms = splice @symbols, 0, $n_symbols_per_query) {
-        my $url = $url_base . '&query=' . join '+', @syms;
+        my $url = $url_base . '?query=' . join '+', @syms;
         # XXX an effort to avoid single pages.
-        $url .= '+8411' if (@syms < 5 && @syms < $n_symbols_per_query);
+        $url .= '+8411.t' if (@syms < 5 && @syms < $n_symbols_per_query);
 
         my $reply = $ua->request(GET $url);
         if ($reply->is_success) {
@@ -73,9 +73,9 @@ sub yahoo_japan {
     # retry loop: follow page links.
     while (my @syms = splice @retry_later, 0, $n_symbols_per_query) {
         my %quotes = ();
-        my $url = $url_base . '&query=' . join '+', @syms;
+        my $url = $url_base . '?query=' . join '+', @syms;
         # XXX an effort to avoid single pages.
-        $url .= '+8411' if (@syms < 5 && @syms < $n_symbols_per_query);
+        $url .= '+8411.t' if (@syms < 5 && @syms < $n_symbols_per_query);
 
         for (my $page = 1; $page <= $n_pages_per_query; $page++) {
             my $reply = $ua->request(GET $url . '&p=' . $page);
@@ -167,7 +167,7 @@ sub _scrape {
     my $tree = shift;
 
     # determine whether it is a single page or list page.
-    my $elm_single_marker = $tree->look_down('class', 'stocksDtl');
+    my $elm_single_marker = $tree->look_down('class', 'stocksDtlWp');
     return (defined $elm_single_marker) ? _scrape_single_page($tree)
                                         : _scrape_list_page($tree);
 }
@@ -175,25 +175,9 @@ sub _scrape {
 sub _scrape_single_page {
     my $tree = shift;
 
-    $tree = $tree->look_down('class', 'stocksDtl');
-    my $elm_code     = $tree->look_down('class', 'stocksInfo')->find('dt');
-    my $elm_price    = $tree->look_down('class', 'stoksPrice');
-    my $elm_name     = $tree->look_down('class', 'symbol')->find('h1');
-    my $elm_datetime = $tree->look_down('class', 'yjSb real')->find('span');
-
-    my $sym = $elm_code->as_text;
-    my ($date, $time) = _parse_datetime($elm_datetime->as_text);
-    my $stock_info = {
-        name  => $elm_name->as_text,
-        price => $elm_price->as_text,
-        date  => $date,
-        time  => $time
-    };
-    $stock_info->{'price'} =~ tr/0-9//cd;
-
-    if ($stock_info->{'price'} eq '') {
-        # TODO need previous last price when current price is unavailable.
-    }
+    # XXX do nothing because single pages seem to be avoided.
+    my $sym = '';
+    my $stock_info = { name  => '', price => '', date  => '', time  => '' };
 
     return ($sym => $stock_info);
 }
@@ -222,7 +206,6 @@ sub _scrape_list_page {
                 };
             };
 
-
             my $mytime = $tr->look_down('class', 'time')->as_text;
             my ($date, $time) = _parse_datetime($mytime);
             $quotes{$sym} = {
@@ -231,7 +214,7 @@ sub _scrape_list_page {
                 date  => $date,
                 time  => $time
             };
-            $quotes{$sym}->{'price'} =~ tr/0-9//cd;
+            $quotes{$sym}->{'price'} =~ tr/.0-9//cd;
         }
     }
 
