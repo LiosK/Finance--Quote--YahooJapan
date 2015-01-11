@@ -44,8 +44,8 @@ sub yahoo_japan {
     # initial trial loop: ignore page links.
     while (my @syms = splice @symbols, 0, $n_symbols_per_query) {
         my $url = $url_base . '?query=' . join '+', @syms;
-        # XXX an effort to avoid single pages.
-        $url .= '+8411.t' if (@syms < 5 && @syms < $n_symbols_per_query);
+        # a trick to avoid single-item pages.
+        $url .= '+%5EDJI' if (@syms < 3 && @syms < $n_symbols_per_query);
 
         my $reply = $ua->request(GET $url);
         if ($reply->is_success) {
@@ -74,8 +74,8 @@ sub yahoo_japan {
     while (my @syms = splice @retry_later, 0, $n_symbols_per_query) {
         my %quotes = ();
         my $url = $url_base . '?query=' . join '+', @syms;
-        # XXX an effort to avoid single pages.
-        $url .= '+8411.t' if (@syms < 5 && @syms < $n_symbols_per_query);
+        # a trick to avoid single-item pages.
+        $url .= '+%5EDJI' if (@syms < 3 && @syms < $n_symbols_per_query);
 
         for (my $page = 1; $page <= $n_pages_per_query; $page++) {
             my $reply = $ua->request(GET $url . '&p=' . $page);
@@ -165,25 +165,6 @@ sub _convert_quote {
 
 sub _scrape {
     my $tree = shift;
-
-    # determine whether it is a single page or list page.
-    my $elm_single_marker = $tree->look_down('class', 'stocksDtlWp');
-    return (defined $elm_single_marker) ? _scrape_single_page($tree)
-                                        : _scrape_list_page($tree);
-}
-
-sub _scrape_single_page {
-    my $tree = shift;
-
-    # XXX do nothing because single pages seem to be avoided.
-    my $sym = '';
-    my $stock_info = { name  => '', price => '', date  => '', time  => '' };
-
-    return ($sym => $stock_info);
-}
-
-sub _scrape_list_page {
-    my $tree = shift;
     my %quotes = ();
 
     my $container = $tree->look_down('id', 'sr');
@@ -197,7 +178,7 @@ sub _scrape_list_page {
                 date  => $date,
                 time  => $time
             };
-            $quote->{'price'} =~ tr/.0-9//cd;
+            $quote->{'price'} =~ tr/.0-9//cd;   # strip commas, etc.
 
             # for a stock code, register a duplicate quote with market letter
             if ($sym =~ /^[0-9A-Z]{2}\d[0-9A-Z]\d?$/) {
