@@ -186,35 +186,28 @@ sub _scrape_list_page {
     my $tree = shift;
     my %quotes = ();
 
-    my $elm = $tree->look_down('id', 'sr');
-    if (defined $elm) {
-        for my $tr ($elm->look_down('class', 'stocks')) {
-            my $sym = $tr->look_down('class', 'code highlight')->as_text;
-            $sym = substr($sym, 1);
-            chop($sym);
-
-            if (length $sym == 4){
-                my $market_name = $tr->look_down('class', 'market yjSt')->as_text;
-                if ($market_name =~ '札証'){
-                    $sym .= '.s';
-                } elsif ($market_name =~ '名証'){
-                    $sym .= '.n';
-                } elsif ($market_name =~ '福証'){
-                    $sym .= '.f';
-                }else{ #JASDAQ or 東証
-                    $sym .= '.t';
-                };
-            };
-
-            my $mytime = $tr->look_down('class', 'time')->as_text;
-            my ($date, $time) = _parse_datetime($mytime);
-            $quotes{$sym} = {
-                name  => $tr->look_down('class', 'name highlight')->as_text,
-                price => $tr->look_down('class', 'price yjXXL')->as_text,
+    my $container = $tree->look_down('id', 'sr');
+    if (defined $container) {
+        for my $e ($container->look_down('class', 'stocks')) {
+            my $sym = substr $e->look_down('class', 'code highlight')->as_text, 1, -1;
+            my ($date, $time) = _parse_datetime($e->look_down('class', 'time')->as_text);
+            my $quote = {
+                name  => $e->look_down('class', 'name highlight')->as_text,
+                price => $e->look_down('class', 'price yjXXL')->as_text,
                 date  => $date,
                 time  => $time
             };
-            $quotes{$sym}->{'price'} =~ tr/.0-9//cd;
+            $quote->{'price'} =~ tr/.0-9//cd;
+
+            # for a stock code, register a duplicate quote with market letter
+            if ($sym =~ /^[0-9A-Z]{2}\d[0-9A-Z]\d?$/) {
+                my $pat = qr/code=($sym\.[A-Z])/;
+                $e->look_down('_tag', 'a', 'href', $pat)->attr('href') =~ $pat;
+                $quotes{lc $1} = $quote if (defined $1);
+            }
+
+            # XXX destructive when a stock quote from other market already exists
+            $quotes{$sym} = $quote;
         }
     }
 
