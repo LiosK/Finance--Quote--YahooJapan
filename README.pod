@@ -4,8 +4,10 @@ Finance::Quote::YahooJapan - A Perl module that enables GnuCash to get quotes of
 
 =head1 DESCRIPTION
 
-Finance::Quote::YahooJapan is a submodule of Finance::Quote, adds support for Japanese stock and mutual fund quotes.
-It allows GnuCash to fetch these quotes from Yahoo! Finance JAPAN L<http://finance.yahoo.co.jp/> with online price update feature.
+Finance::Quote::YahooJapan is a submodule of Finance::Quote, and adds support for Japanese stock and mutual fund quotes.
+This module allows GnuCash to fetch these quotes from Yahoo! Finance JAPAN L<http://finance.yahoo.co.jp/> with online price update feature.
+
+This module obtains quotes by extracting them from the search result pages of Yahoo! Finance JAPAN's stock price search service. Thus the information obtained by this module is covered by Yahoo's terms and conditions. See L<http://finance.yahoo.co.jp/> for more details.
 
 See my blog article for more detailed information: L<http://liosk.blog103.fc2.com/blog-entry-185.html> (ja)
 
@@ -13,24 +15,20 @@ See my blog article for more detailed information: L<http://liosk.blog103.fc2.co
 
 =head2 1. Install Finance::Quote
 
-Install and setup Finance::Quote module as explained in the GnuCash Help Manual: L<http://svn.gnucash.org/docs/help/acct-create.html#Online-price-setup>
+Install and setup Finance::Quote module as explained in the GnuCash Help Manual: L<http://svn.gnucash.org/docs/C/gnucash-help/acct-create.html#Online-price-setup>
 
 =head2 2. Install Finance::Quote::YahooJapan
 
 a. Locate the directory where Finance::Quote is installed and then put the submodule file F<YahooJapan.pm> at F<Finance/Quote/YahooJapan.pm>.
 
-b. Set the C<FQ_LOAD_QUOTELET> environment variable to C<-defaults YahooJapan> so Finance::Quote will load Finance::Quote::YahooJapan as its submodule.
+b. Set the C<FQ_LOAD_QUOTELET> environment variable to C<-defaults YahooJapan> so that Finance::Quote will load Finance::Quote::YahooJapan.
 
 =head2 3. Setup GnuCash Online Quote Feature
 
-Launch GnuCash and setup your securities as explained in the Manual: L<http://svn.gnucash.org/docs/help/acct-create.html#Online-price-setup>
+Launch GnuCash and setup your securities as explained in the Manual: L<http://svn.gnucash.org/docs/C/gnucash-help/acct-create.html#Online-price-setup>
 
 =head1 LIMITATIONS
 
-Since the behavior change of Yahoo! Finance JAPAN's stock price search, which drove the development of Finance::Quote::YahooJapan Version 0.4, FQ_YahooJapan no longer returns correct answers in some specific cases. Before the change Yahoo returned the securities exactly matched to the ticker symbols in a search query, but now Yahoo returns far more securities that are partially matched to. So it became difficult to determine whether a missing security doesn't exist or is contained in the following paginated result pages.
-
-FQ_YahooJapan follows page links to find missing target securities, but it examines a limited number of pages (3 pages by default) to avoid sending too many requests and taking too much time. This algorithm works well in ordinary use cases. But if a query contains some simple symbols such as "1" and "T", Yahoo returns so many unrelated securities that FQ_YahooJapan can't find other target securities in the query.
-
-When you find FQ_YahooJapan returning "not found" errors on the existing securities, check your query and remove too simple symbols to avoid the problem. Or you can order FQ_YahooJapan to follow page links more eagerly by calling class method C<Finance::Quote::YahooJapan-E<gt>n_pages_per_query($number)>, but it's not recommended because it can cause an undesirable increase of the network load.
+Finance::Quote::YahooJapan fails to fetch quotes of some securities under certain conditions, because this module extracts quotes from only a limited number of paginated search result pages though Yahoo! Finance JAPAN's stock price search service returns a lot of unrelated securities that partially match to a search query. Yahoo tends to return too many unrelated securities when a search query contains a simple symbol (such as C<1> and C<T>) that does not look like an actual Japanese ticker symbol. If you cannot get a quote of a target security, please examine your search query and remove such simple symbols (if any). Also, appending market selector letters to stock codes, like making C<1305> into C<1305.t>, will be helpful in some cases.
 
 =cut
