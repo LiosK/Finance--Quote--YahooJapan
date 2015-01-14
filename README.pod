@@ -21,7 +21,7 @@ Install and setup Finance::Quote module as explained in the GnuCash Help Manual:
 
 a. Locate the directory where Finance::Quote is installed and then put the submodule file F<YahooJapan.pm> at F<Finance/Quote/YahooJapan.pm>.
 
-b. Set the C<FQ_LOAD_QUOTELET> environment variable to C<-defaults YahooJapan> so that Finance::Quote will load Finance::Quote::YahooJapan.
+b. Set the C<FQ_LOAD_QUOTELET> environment variable to C<-defaults YahooJapan> in order to load Finance::Quote::YahooJapan.
 
 =head2 3. Setup GnuCash Online Quote Feature
 
