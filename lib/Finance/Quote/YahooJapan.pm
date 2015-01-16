@@ -14,7 +14,7 @@ use utf8;
 use HTML::TreeBuilder;
 use HTTP::Request::Common;
 
-our $VERSION = '0.4';
+our $VERSION = '0.5';
 
 # The maximum number of symbols a search query can contain.
 my $n_symbols_per_query = 30;
@@ -36,16 +36,16 @@ sub yahoo_japan {
     return unless @symbols; # do nothing if no symbols.
 
     my $ua = $quoter->user_agent;
-    my $url_base = 'http://info.finance.yahoo.co.jp/search/?ei=UTF-8&view=l1';
+    my $url_base = 'http://info.finance.yahoo.co.jp/search/';
 
     my %info = ();
     my @retry_later = ();
 
     # initial trial loop: ignore page links.
     while (my @syms = splice @symbols, 0, $n_symbols_per_query) {
-        my $url = $url_base . '&query=' . join '+', @syms;
-        # XXX an effort to avoid single pages.
-        $url .= '+8411' if (@syms < 5 && @syms < $n_symbols_per_query);
+        my $url = $url_base . '?query=' . join '+', @syms;
+        # a trick to avoid single-item pages.
+        $url .= '+%5EDJI' if (@syms < 3 && @syms < $n_symbols_per_query);
 
         my $reply = $ua->request(GET $url);
         if ($reply->is_success) {
@@ -73,9 +73,9 @@ sub yahoo_japan {
     # retry loop: follow page links.
     while (my @syms = splice @retry_later, 0, $n_symbols_per_query) {
         my %quotes = ();
-        my $url = $url_base . '&query=' . join '+', @syms;
-        # XXX an effort to avoid single pages.
-        $url .= '+8411' if (@syms < 5 && @syms < $n_symbols_per_query);
+        my $url = $url_base . '?query=' . join '+', @syms;
+        # a trick to avoid single-item pages.
+        $url .= '+%5EDJI' if (@syms < 3 && @syms < $n_symbols_per_query);
 
         for (my $page = 1; $page <= $n_pages_per_query; $page++) {
             my $reply = $ua->request(GET $url . '&p=' . $page);
@@ -165,57 +165,30 @@ sub _convert_quote {
 
 sub _scrape {
     my $tree = shift;
-
-    # determine whether it is a single page or list page.
-    my $elm_single_marker = $tree->look_down('class', 'stocksDtl');
-    return (defined $elm_single_marker) ? _scrape_single_page($tree)
-                                        : _scrape_list_page($tree);
-}
-
-sub _scrape_single_page {
-    my $tree = shift;
-
-    $tree = $tree->look_down('class', 'stocksDtl');
-    my $elm_code     = $tree->look_down('class', 'stocksInfo')->find('dt');
-    my $elm_price    = $tree->look_down('class', 'stoksPrice');
-    my $elm_name     = $tree->look_down('class', 'symbol')->find('h1');
-    my $elm_datetime = $tree->look_down('class', 'yjSb real')->find('span');
-
-    my $sym = $elm_code->as_text;
-    my ($date, $time) = _parse_datetime($elm_datetime->as_text);
-    my $stock_info = {
-        name  => $elm_name->as_text,
-        price => $elm_price->as_text,
-        date  => $date,
-        time  => $time
-    };
-    $stock_info->{'price'} =~ tr/0-9//cd;
-
-    if ($stock_info->{'price'} eq '') {
-        # TODO need previous last price when current price is unavailable.
-    }
-
-    return ($sym => $stock_info);
-}
-
-sub _scrape_list_page {
-    my $tree = shift;
     my %quotes = ();
 
-    my $elm_table = $tree->look_down('class', 'selectLine');    # XXX
-    if (defined $elm_table) {
-        for my $tr ($elm_table->find('tr')) {
-            if (my @row = $tr->find('td')) {
-                my $sym = $row[0]->as_text;
-                my ($date, $time) = _parse_datetime($row[3]->as_text);
-                $quotes{$sym} = {
-                    name  => $row[2]->as_text,
-                    price => $row[4]->as_text,
-                    date  => $date,
-                    time  => $time
-                };
-                $quotes{$sym}->{'price'} =~ tr/0-9//cd;
+    my $container = $tree->look_down('id', 'sr');
+    if (defined $container) {
+        for my $e ($container->look_down('class', 'stocks')) {
+            my $sym = substr $e->look_down('class', 'code highlight')->as_text, 1, -1;
+            my ($date, $time) = _parse_datetime($e->look_down('class', 'time')->as_text);
+            my $quote = {
+                name  => $e->look_down('class', 'name highlight')->as_text,
+                price => $e->look_down('class', 'price yjXXL')->as_text,
+                date  => $date,
+                time  => $time
+            };
+            $quote->{'price'} =~ tr/.0-9//cd;   # strip commas, etc.
+
+            # for a stock code, register a duplicate quote with market letter
+            if ($sym =~ /^[0-9A-Z]{2}\d[0-9A-Z]\d?$/) {
+                my $pat = qr/code=($sym\.[A-Z])/;
+                $e->look_down('_tag', 'a', 'href', $pat)->attr('href') =~ $pat;
+                $quotes{lc $1} = $quote if (defined $1);
             }
+
+            # XXX destructive when a stock quote from other market already exists
+            $quotes{$sym} = $quote;
         }
     }
 
