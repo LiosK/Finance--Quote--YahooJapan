@@ -1,20 +1,17 @@
-#!/usr/bin/perl -w
+package Finance::Quote::YahooJapan;
 
 # Author:   LiosK <contact@mail.liosk.net>
 # License:  The GNU General Public License
 #
-# Information obtained by this module may be covered by Yahoo's terms
-# and conditions. See http://finance.yahoo.co.jp/ for more details.
-
-package Finance::Quote::YahooJapan;
+# Quotations fetched through this module are bound by Yahoo!'s terms and
+# conditions. See http://finance.yahoo.co.jp/ for more details.
 
 use strict;
 use warnings;
 use utf8;
 use HTML::TreeBuilder;
-use HTTP::Request::Common;
 
-our $VERSION = '0.5';
+our $VERSION = 'v1.0.0_1';
 
 # The maximum number of symbols a search query can contain.
 my $n_symbols_per_query = 30;
@@ -47,7 +44,7 @@ sub yahoo_japan {
         # a trick to avoid single-item pages.
         $url .= '+%5EDJI' if (@syms < 3 && @syms < $n_symbols_per_query);
 
-        my $reply = $ua->request(GET $url);
+        my $reply = $ua->get($url);
         if ($reply->is_success) {
             my $tree = HTML::TreeBuilder->new_from_content($reply->content);
             my %quotes = _scrape($tree);
@@ -78,7 +75,7 @@ sub yahoo_japan {
         $url .= '+%5EDJI' if (@syms < 3 && @syms < $n_symbols_per_query);
 
         for (my $page = 1; $page <= $n_pages_per_query; $page++) {
-            my $reply = $ua->request(GET $url . '&p=' . $page);
+            my $reply = $ua->get($url . '&p=' . $page);
             if ($reply->is_success) {
                 my $tree = HTML::TreeBuilder->new_from_content($reply->content);
                 %quotes = (%quotes, _scrape($tree));
