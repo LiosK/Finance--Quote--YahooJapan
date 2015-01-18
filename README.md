@@ -1,6 +1,6 @@
 # NAME
 
-Finance::Quote::YahooJapan - A Perl module that enables GnuCash to get quotes of Japanese stocks and funds from Yahoo! JAPAN.
+Finance::Quote::YahooJapan - A Perl module that enables GnuCash to get quotes of Japanese stocks and mutual funds from Yahoo! Finance JAPAN.
 
 # SYNOPSIS
 
@@ -10,9 +10,7 @@ Finance::Quote::YahooJapan - A Perl module that enables GnuCash to get quotes of
 
 # DESCRIPTION
 
-Finance::Quote::YahooJapan is a submodule of Finance::Quote, and adds support for Japanese stock and mutual fund quotes. This module allows GnuCash to fetch these quotes from Yahoo! Finance JAPAN [http://finance.yahoo.co.jp/](http://finance.yahoo.co.jp/) with online price update feature.
-
-This module obtains quotes by extracting them from the search result pages of Yahoo! Finance JAPAN's stock price search service. Thus the quotes fetched through this module are bound by Yahoo!'s terms and conditions.
+Finance::Quote::YahooJapan is a submodule of Finance::Quote, and adds support for Japanese stock and mutual fund quotes. This module extracts these quotes from the result pages of Yahoo! Finance JAPAN's stock price search service. Thus this module enables GnuCash to obtain Japanese quotes through its online price update feature.
 
 See my blog article for more detailed information: [http://liosk.blog103.fc2.com/blog-entry-185.html](http://liosk.blog103.fc2.com/blog-entry-185.html) (ja)
 
