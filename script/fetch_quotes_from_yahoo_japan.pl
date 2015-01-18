@@ -5,6 +5,26 @@ use strict;
 use warnings;
 use Finance::Quote;
 
+
+=head1 NAME
+
+fetch_quotes_from_yahoo_japan.pl - Fetch quotes from Yahoo! Finance JAPAN.
+
+=head1 SYNOPSIS
+
+    fetch_quotes_from_yahoo_japan.pl [--defaults] [--random] [ticker_symbol ...]
+
+=head1 DESCRIPTION
+
+fetch_quotes_from_yahoo_japan.pl is a trivial script to try Finance::Quote::YahooJapan.
+
+=head1 AUTHOR
+
+LiosK E<lt>contact@mail.liosk.netE<gt>
+
+=cut
+
+
 # receive target securities from command line arguments
 my @symbols = ();
 my $appends_defaults = !@ARGV;
