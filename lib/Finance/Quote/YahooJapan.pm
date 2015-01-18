@@ -1,11 +1,5 @@
 package Finance::Quote::YahooJapan;
 
-# Author:   LiosK <contact@mail.liosk.net>
-# License:  The GNU General Public License
-#
-# Quotations fetched through this module are bound by Yahoo!'s terms and
-# conditions. See http://finance.yahoo.co.jp/ for more details.
-
 use strict;
 use warnings;
 use utf8;
@@ -214,3 +208,54 @@ sub _parse_datetime($;) {
 }
 
 1;
+__END__
+
+=head1 NAME
+
+Finance::Quote::YahooJapan - A Perl module that enables GnuCash to get quotes of Japanese stocks and funds from Yahoo! JAPAN.
+
+=head1 SYNOPSIS
+
+    use Finance::Quote;
+    my $q = Finance::Quote->new('-defaults', 'YahooJapan');
+    my %quotes = $q->fetch('yahoo_japan', '7203', '8306', '9437');
+
+=head1 DESCRIPTION
+
+Finance::Quote::YahooJapan is a submodule of Finance::Quote, and adds support for Japanese stock and mutual fund quotes. This module allows GnuCash to fetch these quotes from Yahoo! Finance JAPAN L<http://finance.yahoo.co.jp/> with online price update feature.
+
+This module obtains quotes by extracting them from the search result pages of Yahoo! Finance JAPAN's stock price search service. Thus the quotes fetched through this module are bound by Yahoo!'s terms and conditions.
+
+See my blog article for more detailed information: L<http://liosk.blog103.fc2.com/blog-entry-185.html> (ja)
+
+=head1 USAGE
+
+=head2 1. Install Finance::Quote
+
+Install and setup Finance::Quote module as explained in the GnuCash Help Manual: L<http://svn.gnucash.org/docs/C/gnucash-help/acct-create.html#Online-price-setup>
+
+=head2 2. Install Finance::Quote::YahooJapan
+
+a. Locate the directory where Finance::Quote is installed and then put the submodule file F<YahooJapan.pm> at F<Finance/Quote/YahooJapan.pm>.
+
+b. Set the C<FQ_LOAD_QUOTELET> environment variable to C<-defaults YahooJapan> in order to load Finance::Quote::YahooJapan.
+
+=head2 3. Setup GnuCash Online Quote Feature
+
+Launch GnuCash and setup your securities as explained in the Manual: L<http://svn.gnucash.org/docs/C/gnucash-help/acct-create.html#Online-price-setup>
+
+=head1 LIMITATIONS
+
+Finance::Quote::YahooJapan fails to fetch quotes of some securities under certain conditions, because this module extracts quotes from only a limited number of paginated search result pages though Yahoo! Finance JAPAN's stock price search service returns a lot of unrelated securities that partially match to a search query. Yahoo! tends to return too many unrelated securities when a search query contains a simple symbol (such as C<1> and C<T>) that does not look like an actual Japanese ticker symbol. If you cannot get a quote of a target security, please examine your search query and remove such simple symbols (if any). Also, appending market selector suffixes to stock codes, like making C<1305> into C<1305.t>, will be helpful in some cases.
+
+=head1 LICENSE
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+Quotations fetched through this module are bound by Yahoo!'s terms and conditions. See L<http://finance.yahoo.co.jp/> for more details.
+
+=head1 AUTHOR
+
+LiosK E<lt>contact@mail.liosk.netE<gt>
+
+=cut
