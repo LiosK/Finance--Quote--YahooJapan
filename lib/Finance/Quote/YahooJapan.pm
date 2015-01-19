@@ -5,7 +5,7 @@ use warnings;
 use utf8;
 use HTML::TreeBuilder;
 
-our $VERSION = 'v1.0.0_1';
+our $VERSION = 'v1.0.0';
 
 # The maximum number of symbols a search query can contain.
 my $n_symbols_per_query = 30;
