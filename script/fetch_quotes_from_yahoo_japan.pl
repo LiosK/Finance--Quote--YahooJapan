@@ -18,6 +18,10 @@ fetch_quotes_from_yahoo_japan.pl - Fetch quotes from Yahoo! Finance JAPAN.
 
 fetch_quotes_from_yahoo_japan.pl is a trivial script to try Finance::Quote::YahooJapan.
 
+=head1 EXAMPLE
+
+    fetch_quotes_from_yahoo_japan.pl 2914 7267 8316
+
 =head1 AUTHOR
 
 LiosK E<lt>contact@mail.liosk.netE<gt>
