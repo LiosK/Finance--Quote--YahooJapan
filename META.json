@@ -42,7 +42,8 @@
       },
       "runtime" : {
          "requires" : {
-            "Finance::Quote" : "1.15"
+            "Finance::Quote" : "1.15",
+            "perl" : "5.010001"
          }
       }
    },
