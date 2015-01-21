@@ -48,7 +48,7 @@ push @symbols, list_default_securities() if ($appends_defaults);
 push @symbols, list_random_securities(200) if ($appends_random);
 
 # fetch and print quotes
-my $q = Finance::Quote->new('-defaults', 'YahooJapan')->yahoo_japan(@symbols);
+my $q = Finance::Quote->new('-defaults', 'YahooJapan')->fetch('yahoo_japan', @symbols);
 
 my @fields = qw/success currency method name isodate time price errormsg/;
 for my $sym (@symbols) {
