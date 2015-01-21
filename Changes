@@ -6,6 +6,7 @@ v1.0.0 2015-01
         - Introduce Minilla.
         - Add Build.PL, META.json, etc.
         - Move executable scripts to script/.
+        - Add test scripts in t/.
         - Change the versioning policy.
         - Move README.pod to the bottom of YahooJapan.pm.
     - Stop the direct use of HTTP::Request::Common.
