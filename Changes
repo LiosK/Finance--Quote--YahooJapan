@@ -1,6 +1,6 @@
 Revision history for Perl extension Finance-Quote-YahooJapan
 
-v1.0.0
+v1.0.0 2015-01
 
     - Improve conformity to Perl module conventions.
         - Introduce Minilla.
