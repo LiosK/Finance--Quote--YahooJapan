@@ -1,0 +1,47 @@
+Revision history for Perl extension Finance-Quote-YahooJapan
+
+v1.0.0 2015-01-22
+
+    - Improve conformity to Perl module conventions.
+        - Introduce Minilla.
+        - Add Build.PL, META.json, etc.
+        - Move executable scripts to script/.
+        - Add test scripts in t/.
+        - Change the versioning policy.
+        - Move README.pod to the bottom of YahooJapan.pm.
+    - Stop the direct use of HTTP::Request::Common.
+    - Merge two test scripts.
+    - Other minor refactoring.
+
+0.5 2015-01-17
+
+    - Fix the scraper function in response to the renovation of Yahoo's stock
+      price search service.
+    - Add support for market selector suffixes like those in "8411.t" and
+      "7203.n".
+    - Fix a serious bug relating to the decimal point in a stock price.
+    - Improve and update test scripts.
+
+0.4 2012-11-05
+
+    - Add support for new stock price search page of Yahoo! Finance JAPAN.
+    - Implement new internal parameters and their accessors to optimize module's
+      behavior.
+    - Change the date format to conform to Finance::Quote standard.
+    - Add a new test script.
+
+0.3 2010-10-24
+
+    - Fixed a problem with stock names containing spaces.
+    - Improved error handling.
+    - Added a test case.
+
+0.2 2010-04-06
+
+    - Added the trade time fetch feature, which actually isn't necessary for
+      GnuCash.
+    - Some minor fixes, including internal interface changes.
+
+0.1 2009-06-16
+
+    - Initial commit.

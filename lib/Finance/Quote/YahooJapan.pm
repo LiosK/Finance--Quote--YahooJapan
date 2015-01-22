@@ -1,20 +1,11 @@
-#!/usr/bin/perl -w
-
-# Author:   LiosK <contact@mail.liosk.net>
-# License:  The GNU General Public License
-#
-# Information obtained by this module may be covered by Yahoo's terms
-# and conditions. See http://finance.yahoo.co.jp/ for more details.
-
 package Finance::Quote::YahooJapan;
 
 use strict;
 use warnings;
 use utf8;
 use HTML::TreeBuilder;
-use HTTP::Request::Common;
 
-our $VERSION = '0.5';
+our $VERSION = 'v1.0.0';
 
 # The maximum number of symbols a search query can contain.
 my $n_symbols_per_query = 30;
@@ -47,7 +38,7 @@ sub yahoo_japan {
         # a trick to avoid single-item pages.
         $url .= '+%5EDJI' if (@syms < 3 && @syms < $n_symbols_per_query);
 
-        my $reply = $ua->request(GET $url);
+        my $reply = $ua->get($url);
         if ($reply->is_success) {
             my $tree = HTML::TreeBuilder->new_from_content($reply->content);
             my %quotes = _scrape($tree);
@@ -78,7 +69,7 @@ sub yahoo_japan {
         $url .= '+%5EDJI' if (@syms < 3 && @syms < $n_symbols_per_query);
 
         for (my $page = 1; $page <= $n_pages_per_query; $page++) {
-            my $reply = $ua->request(GET $url . '&p=' . $page);
+            my $reply = $ua->get($url . '&p=' . $page);
             if ($reply->is_success) {
                 my $tree = HTML::TreeBuilder->new_from_content($reply->content);
                 %quotes = (%quotes, _scrape($tree));
@@ -217,3 +208,54 @@ sub _parse_datetime($;) {
 }
 
 1;
+__END__
+
+=head1 NAME
+
+Finance::Quote::YahooJapan - A Perl module that enables GnuCash to get quotes of Japanese stocks and mutual funds from Yahoo! Finance JAPAN.
+
+=head1 SYNOPSIS
+
+    use Finance::Quote;
+    my $q = Finance::Quote->new('-defaults', 'YahooJapan');
+    my %quotes = $q->fetch('yahoo_japan', '7203', '8306', '9437');
+
+=head1 DESCRIPTION
+
+Finance::Quote::YahooJapan is a submodule of Finance::Quote, and adds support for Japanese stock and mutual fund quotes. This module extracts these quotes from the result pages of Yahoo! Finance JAPAN's stock price search service. Thus this module enables GnuCash to obtain Japanese quotes through its online price update feature.
+
+=head1 SETUP
+
+=head2 1. Install Finance::Quote
+
+Install and setup Finance::Quote module as explained in the GnuCash Help Manual: L<http://svn.gnucash.org/docs/C/gnucash-help/acct-create.html#Online-price-setup>
+
+=head2 2. Install Finance::Quote::YahooJapan
+
+a. Type C<cpanm git://github.com/LiosK/Finance--Quote--YahooJapan.git>. Or, if you don't prefer to use C<cpanm>, locate the directory where F<Finance::Quote::*> are installed, and then put F<lib/Finance/Quote/YahooJapan.pm> in the directory.
+
+b. Set the C<FQ_LOAD_QUOTELET> environment variable to C<-defaults YahooJapan> in order to load Finance::Quote::YahooJapan.
+
+=head2 3. Setup GnuCash Online Quote Feature
+
+Launch GnuCash and setup your securities as explained in the Manual: L<http://svn.gnucash.org/docs/C/gnucash-help/acct-create.html#Online-price-setup>
+
+=head1 LIMITATIONS
+
+Finance::Quote::YahooJapan fails to fetch quotes of some securities under certain conditions, because this module extracts quotes from only a limited number of paginated search result pages though Yahoo! Finance JAPAN's stock price search service returns a lot of unrelated securities that partially match to a search query. Yahoo! tends to return too many unrelated securities when a search query contains a simple symbol (such as C<1> and C<T>) that does not look like an actual Japanese ticker symbol. If you cannot get a quote of a target security, please examine your search query and remove such simple symbols (if any). Also, appending market selector suffixes to stock codes, like making C<1305> into C<1305.t>, will be helpful in some cases.
+
+=head1 LICENSE
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+Quotations fetched through this module are bound by Yahoo!'s terms and conditions. See L<http://finance.yahoo.co.jp/> for more details.
+
+=head1 AUTHOR
+
+LiosK E<lt>contact@mail.liosk.netE<gt>
+
+=head1 SEE ALSO
+
+Finance::Quote
+
+=cut
