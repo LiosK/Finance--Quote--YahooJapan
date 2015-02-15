@@ -5,13 +5,16 @@ use warnings;
 use utf8;
 use HTML::TreeBuilder;
 
-our $VERSION = 'v1.0.0';
+our $VERSION = 'v1.0.1';
 
-# The maximum number of symbols a search query can contain.
+# Maximum number of symbols that a search query can contain.
 my $n_symbols_per_query = 30;
 
-# The maximum number of pages to follow.
+# Maximum number of page links to follow per query.
 my $n_pages_per_query = 3;
+
+# Delay in seconds between HTTP requests.
+my $delay_per_request = 0.1;
 
 sub methods {
     return (yahoo_japan => \&yahoo_japan);
@@ -59,6 +62,8 @@ sub yahoo_japan {
                 }
             }
         }
+
+        if (@symbols) { select undef, undef, undef, $delay_per_request; }
     }
 
     # retry loop: follow page links.
@@ -69,6 +74,7 @@ sub yahoo_japan {
         $url .= '+%5EDJI' if (@syms < 3 && @syms < $n_symbols_per_query);
 
         for (my $page = 1; $page <= $n_pages_per_query; $page++) {
+            select undef, undef, undef, $delay_per_request;
             my $reply = $ua->get($url . '&p=' . $page);
             if ($reply->is_success) {
                 my $tree = HTML::TreeBuilder->new_from_content($reply->content);
@@ -107,6 +113,13 @@ sub n_pages_per_query {
     my $class = shift;
     return $n_pages_per_query if (!@_);
     $n_pages_per_query = shift;
+    return $class;
+}
+
+sub delay_per_request {
+    my $class = shift;
+    return $delay_per_request if (!@_);
+    $delay_per_request = shift;
     return $class;
 }
 

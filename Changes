@@ -1,5 +1,9 @@
 Revision history for Perl extension Finance-Quote-YahooJapan
 
+v1.0.1 2015-02-15
+
+    - Implement delays between HTTP requests to reduce network load.
+
 v1.0.0 2015-01-22
 
     - Improve conformity to Perl module conventions.

@@ -24,4 +24,10 @@ Finance::Quote::YahooJapan->n_pages_per_query($n_pages_per_query + 3);
 is(Finance::Quote::YahooJapan->n_pages_per_query(), $n_pages_per_query + 3, 'Finance::Quote::YahooJapan->n_pages_per_query($n_pages_per_query)');
 
 
+cmp_ok(Finance::Quote::YahooJapan->delay_per_request(), '>', 0, 'Finance::Quote::YahooJapan->delay_per_request() > 0');
+my $delay_per_request = Finance::Quote::YahooJapan->delay_per_request();
+Finance::Quote::YahooJapan->delay_per_request($delay_per_request + 1);
+is(Finance::Quote::YahooJapan->delay_per_request(), $delay_per_request + 1, 'Finance::Quote::YahooJapan->delay_per_request($delay_per_request)');
+
+
 done_testing;
