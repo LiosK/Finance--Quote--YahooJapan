@@ -5,7 +5,7 @@ use warnings;
 use utf8;
 use HTML::TreeBuilder;
 
-our $VERSION = 'v1.0.1';
+our $VERSION = 'v1.0.2';
 
 # Maximum number of symbols that a search query can contain.
 my $n_symbols_per_query = 30;
@@ -241,17 +241,17 @@ Finance::Quote::YahooJapan is a submodule of Finance::Quote, and adds support fo
 
 =head2 1. Install Finance::Quote
 
-Install and setup Finance::Quote module as explained in the GnuCash Help Manual: L<http://svn.gnucash.org/docs/C/gnucash-help/acct-create.html#Online-price-setup>
+Install and setup Finance::Quote module as explained in the GnuCash Help Manual: L<https://code.gnucash.org/docs/C/gnucash-help/acct-create.html#Online-price-setup>
 
 =head2 2. Install Finance::Quote::YahooJapan
 
-a. Type C<cpanm git://github.com/LiosK/Finance--Quote--YahooJapan.git>. Or, if you don't prefer to use C<cpanm>, locate the directory where F<Finance::Quote::*> are installed, and then put F<lib/Finance/Quote/YahooJapan.pm> in the directory.
+a. Type C<cpanm git://github.com/LiosK/Finance--Quote--YahooJapan.git> in the terminal. Or, if you don't prefer to use C<cpanm>, locate the directory where F<Finance::Quote::*> are installed, and then put F<lib/Finance/Quote/YahooJapan.pm> in the directory.
 
 b. Set the C<FQ_LOAD_QUOTELET> environment variable to C<-defaults YahooJapan> in order to load Finance::Quote::YahooJapan.
 
 =head2 3. Setup GnuCash Online Quote Feature
 
-Launch GnuCash and setup your securities as explained in the Manual: L<http://svn.gnucash.org/docs/C/gnucash-help/acct-create.html#Online-price-setup>
+Launch GnuCash and setup your securities as explained in the Manual: L<https://code.gnucash.org/docs/C/gnucash-help/acct-create.html#Online-price-setup>
 
 =head1 LIMITATIONS
 

@@ -16,17 +16,17 @@ Finance::Quote::YahooJapan is a submodule of Finance::Quote, and adds support fo
 
 ## 1. Install Finance::Quote
 
-Install and setup Finance::Quote module as explained in the GnuCash Help Manual: [http://svn.gnucash.org/docs/C/gnucash-help/acct-create.html#Online-price-setup](http://svn.gnucash.org/docs/C/gnucash-help/acct-create.html#Online-price-setup)
+Install and setup Finance::Quote module as explained in the GnuCash Help Manual: [https://code.gnucash.org/docs/C/gnucash-help/acct-create.html#Online-price-setup](https://code.gnucash.org/docs/C/gnucash-help/acct-create.html#Online-price-setup)
 
 ## 2. Install Finance::Quote::YahooJapan
 
-a. Type `cpanm git://github.com/LiosK/Finance--Quote--YahooJapan.git`. Or, if you don't prefer to use `cpanm`, locate the directory where `Finance::Quote::*` are installed, and then put `lib/Finance/Quote/YahooJapan.pm` in the directory.
+a. Type `cpanm git://github.com/LiosK/Finance--Quote--YahooJapan.git` in the terminal. Or, if you don't prefer to use `cpanm`, locate the directory where `Finance::Quote::*` are installed, and then put `lib/Finance/Quote/YahooJapan.pm` in the directory.
 
 b. Set the `FQ_LOAD_QUOTELET` environment variable to `-defaults YahooJapan` in order to load Finance::Quote::YahooJapan.
 
 ## 3. Setup GnuCash Online Quote Feature
 
-Launch GnuCash and setup your securities as explained in the Manual: [http://svn.gnucash.org/docs/C/gnucash-help/acct-create.html#Online-price-setup](http://svn.gnucash.org/docs/C/gnucash-help/acct-create.html#Online-price-setup)
+Launch GnuCash and setup your securities as explained in the Manual: [https://code.gnucash.org/docs/C/gnucash-help/acct-create.html#Online-price-setup](https://code.gnucash.org/docs/C/gnucash-help/acct-create.html#Online-price-setup)
 
 # LIMITATIONS
 
