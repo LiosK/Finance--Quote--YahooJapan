@@ -4,14 +4,15 @@ use strict;
 use warnings;
 use utf8;
 use HTML::TreeBuilder;
+use URI::Escape;
 
 our $VERSION = 'v1.0.2';
 
 # Maximum number of symbols that a search query can contain.
-my $n_symbols_per_query = 30;
+my $n_symbols_per_query = 4;
 
 # Maximum number of page links to follow per query.
-my $n_pages_per_query = 3;
+my $n_pages_per_query = 300;
 
 # Delay in seconds between HTTP requests.
 my $delay_per_request = 0.1;
@@ -37,7 +38,7 @@ sub yahoo_japan {
 
     # initial trial loop: ignore page links.
     while (my @syms = splice @symbols, 0, $n_symbols_per_query) {
-        my $url = $url_base . '?query=' . join '+', @syms;
+        my $url = $url_base . '?query=' . uri_escape(join ' ', @syms);
         # a trick to avoid single-item pages.
         $url .= '+%5EDJI' if (@syms < 3 && @syms < $n_symbols_per_query);
 
@@ -127,7 +128,7 @@ sub delay_per_request {
 sub _has_next_page {
     my ($tree, $current_page) = @_;
 
-    my $elm_paging = $tree->look_down('class', 'ymuiPagingBottom clearFix');
+    my $elm_paging = $tree->look_down('class', 'FLg4lG8W');
     if (defined $elm_paging) {
         for my $page_link ($elm_paging->find('a')) {
             my $num = $page_link->as_text;
@@ -173,12 +174,12 @@ sub _scrape {
 
     my $container = $tree->look_down('id', 'sr');
     if (defined $container) {
-        for my $e ($container->look_down('class', 'stocks')) {
-            my $sym = substr $e->look_down('class', 'code highlight')->as_text, 1, -1;
-            my ($date, $time) = _parse_datetime($e->look_down('class', 'time')->as_text);
+        for my $e ($container->look_down('class', '_239Zl3PI')) {
+            my $sym = $e->look_down('class', 'CGplzQf_')->as_text;
+            my ($date, $time) = _parse_datetime($e->look_down('class', '_2XNtPXRL')->as_text);
             my $quote = {
-                name  => $e->look_down('class', 'name highlight')->as_text,
-                price => $e->look_down('class', 'price yjXXL')->as_text,
+                name  => $e->look_down('class', '_2MnVoYg5')->as_text,
+                price => $e->look_down('class', '_3rXWJKZF')->as_text,
                 date  => $date,
                 time  => $time
             };
