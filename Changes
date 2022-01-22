@@ -1,5 +1,11 @@
 Revision history for Perl extension Finance-Quote-YahooJapan
 
+v1.1.0 Unreleased
+
+    - Update scraper to deal with changes in Yahoo's stock price pages.
+    - Update example tickers in tests and examples.
+    - Update dependencies.
+
 v1.0.2 2020-01-26
 
     - Update dependencies.

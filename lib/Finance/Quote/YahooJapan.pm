@@ -4,11 +4,12 @@ use strict;
 use warnings;
 use utf8;
 use HTML::TreeBuilder;
+use URI::Escape;
 
-our $VERSION = 'v1.0.2';
+our $VERSION = 'v1.1.0';
 
 # Maximum number of symbols that a search query can contain.
-my $n_symbols_per_query = 30;
+my $n_symbols_per_query = 4;
 
 # Maximum number of page links to follow per query.
 my $n_pages_per_query = 3;
@@ -27,23 +28,25 @@ sub labels {
 
 sub yahoo_japan {
     my ($quoter, @symbols) = @_;
-    return unless @symbols; # do nothing if no symbols.
+    return if (!@symbols); # do nothing if no symbols.
 
-    my $ua = $quoter->user_agent;
-    my $url_base = 'http://info.finance.yahoo.co.jp/search/';
+    my $ua = $quoter->get_user_agent;
+    my $url_base = 'http://finance.yahoo.co.jp/search/';
 
     my %info = ();
     my @retry_later = ();
 
     # initial trial loop: ignore page links.
     while (my @syms = splice @symbols, 0, $n_symbols_per_query) {
-        my $url = $url_base . '?query=' . join '+', @syms;
+        my $url = $url_base . '?query=' . join '+', map { uri_escape($_) } @syms;
         # a trick to avoid single-item pages.
         $url .= '+%5EDJI' if (@syms < 3 && @syms < $n_symbols_per_query);
 
         my $reply = $ua->get($url);
         if ($reply->is_success) {
-            my $tree = HTML::TreeBuilder->new_from_content($reply->content);
+            my $tree = HTML::TreeBuilder->new;
+            $tree->ignore_unknown(0);
+            $tree->parse_content($reply->content);
             my %quotes = _scrape($tree);
             my $has_next_page = _has_next_page($tree, 1);
             $tree = $tree->delete;  # detach memory
@@ -69,15 +72,17 @@ sub yahoo_japan {
     # retry loop: follow page links.
     while (my @syms = splice @retry_later, 0, $n_symbols_per_query) {
         my %quotes = ();
-        my $url = $url_base . '?query=' . join '+', @syms;
+        my $url = $url_base . '?query=' . join '+', map { uri_escape($_) } @syms;
         # a trick to avoid single-item pages.
         $url .= '+%5EDJI' if (@syms < 3 && @syms < $n_symbols_per_query);
 
         for (my $page = 1; $page <= $n_pages_per_query; $page++) {
             select undef, undef, undef, $delay_per_request;
-            my $reply = $ua->get($url . '&p=' . $page);
+            my $reply = $ua->get($url . '&page=' . $page);
             if ($reply->is_success) {
-                my $tree = HTML::TreeBuilder->new_from_content($reply->content);
+                my $tree = HTML::TreeBuilder->new;
+                $tree->ignore_unknown(0);
+                $tree->parse_content($reply->content);
                 %quotes = (%quotes, _scrape($tree));
                 my $has_next_page = _has_next_page($tree, $page);
                 $tree = $tree->delete;  # detach memory
@@ -127,9 +132,9 @@ sub delay_per_request {
 sub _has_next_page {
     my ($tree, $current_page) = @_;
 
-    my $elm_paging = $tree->look_down('class', 'ymuiPagingBottom clearFix');
+    my $elm_paging = $tree->look_down('class', 'KkN9Pygd');
     if (defined $elm_paging) {
-        for my $page_link ($elm_paging->find('a')) {
+        for my $page_link ($elm_paging->find('button')) {
             my $num = $page_link->as_text;
             return 1 if ($num =~ /^\d+$/ && $num == $current_page + 1);
         }
@@ -173,12 +178,12 @@ sub _scrape {
 
     my $container = $tree->look_down('id', 'sr');
     if (defined $container) {
-        for my $e ($container->look_down('class', 'stocks')) {
-            my $sym = substr $e->look_down('class', 'code highlight')->as_text, 1, -1;
-            my ($date, $time) = _parse_datetime($e->look_down('class', 'time')->as_text);
+        for my $e ($container->look_down('class', '_239Zl3PI')) {
+            my $sym = $e->look_down('class', 'CGplzQf_')->as_text;
+            my ($date, $time) = _parse_datetime($e->look_down('class', '_2JynCBOQ')->as_text);
             my $quote = {
-                name  => $e->look_down('class', 'name highlight')->as_text,
-                price => $e->look_down('class', 'price yjXXL')->as_text,
+                name  => $e->look_down('class', '_2MnVoYg5')->as_text,
+                price => $e->look_down('class', '_3rXWJKZF')->as_text,
                 date  => $date,
                 time  => $time
             };
@@ -186,7 +191,7 @@ sub _scrape {
 
             # for a stock code, register a duplicate quote with market letter
             if ($sym =~ /^[0-9A-Z]{2}\d[0-9A-Z]\d?$/) {
-                my $pat = qr/code=($sym\.[A-Z])/;
+                my $pat = qr/(?:quote\/|code=)($sym\.[A-Z])/;
                 $e->look_down('_tag', 'a', 'href', $pat)->attr('href') =~ $pat;
                 $quotes{lc $1} = $quote if (defined $1);
             }
@@ -231,7 +236,7 @@ Finance::Quote::YahooJapan - A Perl module that enables GnuCash to get quotes of
 
     use Finance::Quote;
     my $q = Finance::Quote->new('-defaults', 'YahooJapan');
-    my %quotes = $q->fetch('yahoo_japan', '7203', '8306', '9437');
+    my %quotes = $q->fetch('yahoo_japan', '6758', '6861', '7203');
 
 =head1 DESCRIPTION
 
@@ -241,7 +246,7 @@ Finance::Quote::YahooJapan is a submodule of Finance::Quote, and adds support fo
 
 =head2 1. Install Finance::Quote
 
-Install and setup Finance::Quote module as explained in the GnuCash Help Manual: L<https://code.gnucash.org/docs/C/gnucash-help/acct-create.html#Online-price-setup>
+Install and setup Finance::Quote module as explained in the GnuCash Help Manual: L<https://code.gnucash.org/docs/C/gnucash-help/acct-create.html#accts-online-quotes>
 
 =head2 2. Install Finance::Quote::YahooJapan
 
@@ -251,11 +256,7 @@ b. Set the C<FQ_LOAD_QUOTELET> environment variable to C<-defaults YahooJapan> i
 
 =head2 3. Setup GnuCash Online Quote Feature
 
-Launch GnuCash and setup your securities as explained in the Manual: L<https://code.gnucash.org/docs/C/gnucash-help/acct-create.html#Online-price-setup>
-
-=head1 LIMITATIONS
-
-Finance::Quote::YahooJapan fails to fetch quotes of some securities under certain conditions, because this module extracts quotes from only a limited number of paginated search result pages though Yahoo! Finance JAPAN's stock price search service returns a lot of unrelated securities that partially match to a search query. Yahoo! tends to return too many unrelated securities when a search query contains a simple symbol (such as C<1> and C<T>) that does not look like an actual Japanese ticker symbol. If you cannot get a quote of a target security, please examine your search query and remove such simple symbols (if any). Also, appending market selector suffixes to stock codes, like making C<1305> into C<1305.t>, will be helpful in some cases.
+Launch GnuCash and setup your securities as explained in the Manual: L<https://code.gnucash.org/docs/C/gnucash-help/acct-create.html#accts-online-quotes>
 
 =head1 LICENSE
 
