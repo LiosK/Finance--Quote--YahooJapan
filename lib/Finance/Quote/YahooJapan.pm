@@ -1,8 +1,8 @@
 package Finance::Quote::YahooJapan;
 
-use strict;
-use warnings;
 use utf8;
+use 5.018;
+use warnings;
 use HTML::TreeBuilder;
 use URI::Escape;
 
@@ -15,7 +15,7 @@ my $n_symbols_per_query = 4;
 my $n_pages_per_query = 3;
 
 # Delay in seconds between HTTP requests.
-my $delay_per_request = 0.1;
+my $delay_per_request = 0.25;
 
 sub methods {
     return (yahoo_japan => \&yahoo_japan);
@@ -31,7 +31,7 @@ sub yahoo_japan {
     return if (!@symbols); # do nothing if no symbols.
 
     my $ua = $quoter->get_user_agent;
-    my $url_base = 'http://finance.yahoo.co.jp/search/';
+    my $url_base = 'https://finance.yahoo.co.jp/search/';
 
     my %info = ();
     my @retry_later = ();
@@ -39,7 +39,7 @@ sub yahoo_japan {
     # initial trial loop: ignore page links.
     while (my @syms = splice @symbols, 0, $n_symbols_per_query) {
         my $url = $url_base . '?query=' . join '+', map { uri_escape($_) } @syms;
-        # a trick to avoid single-item pages.
+        # trick to avoid single-item pages
         $url .= '+%5EDJI' if (@syms < 3 && @syms < $n_symbols_per_query);
 
         my $reply = $ua->get($url);
@@ -73,7 +73,7 @@ sub yahoo_japan {
     while (my @syms = splice @retry_later, 0, $n_symbols_per_query) {
         my %quotes = ();
         my $url = $url_base . '?query=' . join '+', map { uri_escape($_) } @syms;
-        # a trick to avoid single-item pages.
+        # trick to avoid single-item pages
         $url .= '+%5EDJI' if (@syms < 3 && @syms < $n_symbols_per_query);
 
         for (my $page = 1; $page <= $n_pages_per_query; $page++) {
@@ -136,7 +136,7 @@ sub _has_next_page {
     if (defined $elm_paging) {
         for my $page_link ($elm_paging->find('button')) {
             my $num = $page_link->as_text;
-            return 1 if ($num =~ /^\d+$/ && $num == $current_page + 1);
+            return 1 if ($num =~ /^[0-9]+$/ && $num == $current_page + 1);
         }
     }
 
@@ -190,7 +190,7 @@ sub _scrape {
             $quote->{'price'} =~ tr/.0-9//cd;   # strip commas, etc.
 
             # for a stock code, register a duplicate quote with market letter
-            if ($sym =~ /^[0-9A-Z]{2}\d[0-9A-Z]\d?$/) {
+            if ($sym =~ /^[0-9A-Z]{2}[0-9][0-9A-Z][0-9]?$/) {
                 my $pat = qr/(?:quote\/|code=)($sym\.[A-Z])/;
                 $e->look_down('_tag', 'a', 'href', $pat)->attr('href') =~ $pat;
                 $quotes{lc $1} = $quote if (defined $1);
@@ -210,12 +210,12 @@ sub _parse_datetime($;) {
     my @now = localtime;
     my ($year, $mon, $mday, $time) = ($now[5] + 1900, 0, 0, '15:00:00');
 
-    if ($datetime =~ /(\d{1,2}):(\d{1,2})/) {
+    if ($datetime =~ /([0-9]{1,2}):([0-9]{1,2})/) {
         # HH:MM
         $time = sprintf '%02d:%02d:00', $1, $2;
         ($mon, $mday) = ($now[4] + 1, $now[3]);
     }
-    if ($datetime =~ /(\d{1,2})\/(\d{1,2})/) {
+    if ($datetime =~ /([0-9]{1,2})\/([0-9]{1,2})/) {
         # MM/DD
         ($mon, $mday) = ($1, $2);
         $year-- if ($now[4] + 1 < $mon); # MM may point last December in January.
@@ -262,7 +262,7 @@ Launch GnuCash and setup your securities as explained in the Manual: L<https://c
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
-Quotations fetched through this module are bound by Yahoo!'s terms and conditions. See L<http://finance.yahoo.co.jp/> for more details.
+Quotations fetched through this module are bound by Yahoo!'s terms and conditions. See L<https://finance.yahoo.co.jp/> for more details.
 
 =head1 AUTHOR
 

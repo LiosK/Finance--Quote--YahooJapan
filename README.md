@@ -32,7 +32,7 @@ Launch GnuCash and setup your securities as explained in the Manual: [https://co
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
-Quotations fetched through this module are bound by Yahoo!'s terms and conditions. See [http://finance.yahoo.co.jp/](http://finance.yahoo.co.jp/) for more details.
+Quotations fetched through this module are bound by Yahoo!'s terms and conditions. See [https://finance.yahoo.co.jp/](https://finance.yahoo.co.jp/) for more details.
 
 # AUTHOR
 

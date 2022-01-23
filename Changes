@@ -1,8 +1,14 @@
-Revision history for Perl extension Finance-Quote-YahooJapan
+Revision history of Perl extension Finance-Quote-YahooJapan
 
-v1.1.0 Unreleased
+v1.1.0 2022-01-23
 
     - Update scraper to deal with changes in Yahoo's stock price pages.
+      - This update seriously deteriorates the throughput because the number of
+        tickers per http request is now limited to 4 as Yahoo returns error to
+        long queries. Additionally, the request interval is slightly increased
+        to avoid sending requests excessively in a short period of time.
+    - Raise minimum required Perl version to v5.18.
+    - Deprecate --random option of fetch_quotes_from_yahoo_japan.pl.
     - Update example tickers in tests and examples.
     - Update dependencies.
 

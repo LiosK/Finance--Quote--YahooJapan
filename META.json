@@ -45,7 +45,12 @@
             "Finance::Quote" : "1.51",
             "HTML::TreeBuilder" : "5.07",
             "URI::Escape" : "5.10",
-            "perl" : "5.010001"
+            "perl" : "5.018"
+         }
+      },
+      "test" : {
+         "requires" : {
+            "Test::More" : "0"
          }
       }
    },

@@ -1,5 +1,5 @@
 use utf8;
-use strict;
+use 5.018;
 use warnings;
 use Test::More;
 
