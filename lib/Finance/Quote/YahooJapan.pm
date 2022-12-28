@@ -3,7 +3,7 @@ package Finance::Quote::YahooJapan;
 use utf8;
 use 5.018;
 use warnings;
-use HTML::TreeBuilder;
+use HTML::TreeBuilder::XPath;
 use URI::Escape;
 
 our $VERSION = 'v1.1.0';
@@ -44,7 +44,7 @@ sub yahoo_japan {
 
         my $reply = $ua->get($url);
         if ($reply->is_success) {
-            my $tree = HTML::TreeBuilder->new;
+            my $tree = HTML::TreeBuilder::XPath->new;
             $tree->ignore_unknown(0);
             $tree->parse_content($reply->content);
             my %quotes = _scrape($tree);
@@ -80,7 +80,7 @@ sub yahoo_japan {
             select undef, undef, undef, $delay_per_request;
             my $reply = $ua->get($url . '&page=' . $page);
             if ($reply->is_success) {
-                my $tree = HTML::TreeBuilder->new;
+                my $tree = HTML::TreeBuilder::XPath->new;
                 $tree->ignore_unknown(0);
                 $tree->parse_content($reply->content);
                 %quotes = (%quotes, _scrape($tree));
@@ -132,7 +132,7 @@ sub delay_per_request {
 sub _has_next_page {
     my ($tree, $current_page) = @_;
 
-    my $elm_paging = $tree->look_down('class', 'KkN9Pygd');
+    my $elm_paging = $tree->look_down('id', 'pagerbtm');
     if (defined $elm_paging) {
         for my $page_link ($elm_paging->find('button')) {
             my $num = $page_link->as_text;
@@ -175,30 +175,27 @@ sub _convert_quote {
 sub _scrape {
     my $tree = shift;
     my %quotes = ();
+    my @nodes =  $tree->findnodes('//*[@id="sr"]/div/ul/li/article');
+    foreach my $e (@nodes) {
+        my $sym = $e->find('li')->as_text;
+        my ($date, $time) = _parse_datetime($e->find('time')->as_text);
+        my $quote = {
+            name  => $e->find('h1')->as_text,
+            price => $e->find('div')->find('span')->find('span')->find('span')->as_text,
+            date  => $date,
+            time  => $time
+        };
+        $quote->{'price'} =~ tr/.0-9//cd;   # strip commas, etc.
 
-    my $container = $tree->look_down('id', 'sr');
-    if (defined $container) {
-        for my $e ($container->look_down('class', '_239Zl3PI')) {
-            my $sym = $e->look_down('class', 'CGplzQf_')->as_text;
-            my ($date, $time) = _parse_datetime($e->look_down('class', '_2JynCBOQ')->as_text);
-            my $quote = {
-                name  => $e->look_down('class', '_2MnVoYg5')->as_text,
-                price => $e->look_down('class', '_3rXWJKZF')->as_text,
-                date  => $date,
-                time  => $time
-            };
-            $quote->{'price'} =~ tr/.0-9//cd;   # strip commas, etc.
-
-            # for a stock code, register a duplicate quote with market letter
-            if ($sym =~ /^[0-9A-Z]{2}[0-9][0-9A-Z][0-9]?$/) {
-                my $pat = qr/(?:quote\/|code=)($sym\.[A-Z])/;
-                $e->look_down('_tag', 'a', 'href', $pat)->attr('href') =~ $pat;
-                $quotes{lc $1} = $quote if (defined $1);
-            }
-
-            # XXX destructive when a stock quote from other market already exists
-            $quotes{$sym} = $quote;
+        # for a stock code, register a duplicate quote with market letter
+        if ($sym =~ /^[0-9A-Z]{2}[0-9][0-9A-Z][0-9]?$/) {
+            my $pat = qr/(?:quote\/|code=)($sym\.[A-Z])/;
+            $e->look_down('_tag', 'a', 'href', $pat)->attr('href') =~ $pat;
+            $quotes{lc $1} = $quote if (defined $1);
         }
+
+        # XXX destructive when a stock quote from other market already exists
+        $quotes{$sym} = $quote;
     }
 
     return %quotes;
