@@ -3,10 +3,10 @@ package Finance::Quote::YahooJapan;
 use utf8;
 use 5.018;
 use warnings;
-use HTML::TreeBuilder;
+use HTML::TreeBuilder 5 -weak;
 use URI::Escape;
 
-our $VERSION = 'v1.1.0';
+our $VERSION = 'v1.2.0';
 
 # Maximum number of symbols that a search query can contain.
 my $n_symbols_per_query = 4;
@@ -49,7 +49,6 @@ sub yahoo_japan {
             $tree->parse_content($reply->content);
             my %quotes = _scrape($tree);
             my $has_next_page = _has_next_page($tree, 1);
-            $tree = $tree->delete;  # detach memory
 
             for my $sym (@syms) {
                 next if ($info{$sym, 'success'});
@@ -85,7 +84,6 @@ sub yahoo_japan {
                 $tree->parse_content($reply->content);
                 %quotes = (%quotes, _scrape($tree));
                 my $has_next_page = _has_next_page($tree, $page);
-                $tree = $tree->delete;  # detach memory
 
                 last if (!$has_next_page);
             }
@@ -132,7 +130,7 @@ sub delay_per_request {
 sub _has_next_page {
     my ($tree, $current_page) = @_;
 
-    my $elm_paging = $tree->look_down('class', 'KkN9Pygd');
+    my $elm_paging = $tree->look_down('id', 'pagerbtm');
     if (defined $elm_paging) {
         for my $page_link ($elm_paging->find('button')) {
             my $num = $page_link->as_text;
@@ -178,11 +176,12 @@ sub _scrape {
 
     my $container = $tree->look_down('id', 'sr');
     if (defined $container) {
-        for my $e ($container->look_down('class', '_239Zl3PI')) {
-            my $sym = $e->look_down('class', 'CGplzQf_')->as_text;
-            my ($date, $time) = _parse_datetime($e->look_down('class', '_2JynCBOQ')->as_text);
+        # process each <article> that represents a single item
+        for my $e ($container->find('article')) {
+            my $sym = $e->look_down('class', '_2QwBsxBs')->as_text;
+            my ($date, $time) = _parse_datetime($e->find('time')->as_text);
             my $quote = {
-                name  => $e->look_down('class', '_2MnVoYg5')->as_text,
+                name  => $e->find('h1')->as_text,
                 price => $e->look_down('class', '_3rXWJKZF')->as_text,
                 date  => $date,
                 time  => $time
@@ -250,7 +249,7 @@ Install and setup Finance::Quote module as explained in the GnuCash Help Manual:
 
 =head2 2. Install Finance::Quote::YahooJapan
 
-a. Type C<cpanm git://github.com/LiosK/Finance--Quote--YahooJapan.git> in the terminal. Or, if you don't prefer to use C<cpanm>, locate the directory where F<Finance::Quote::*> are installed, and then put F<lib/Finance/Quote/YahooJapan.pm> in the directory.
+a. Type C<cpanm https://github.com/LiosK/Finance--Quote--YahooJapan.git> in the terminal. Or, if you don't prefer to use C<cpanm>, locate the directory where F<Finance::Quote::*> are installed, and then put F<lib/Finance/Quote/YahooJapan.pm> in the directory.
 
 b. Set the C<FQ_LOAD_QUOTELET> environment variable to C<-defaults YahooJapan> in order to load Finance::Quote::YahooJapan.
 

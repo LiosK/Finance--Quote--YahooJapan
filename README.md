@@ -20,7 +20,7 @@ Install and setup Finance::Quote module as explained in the GnuCash Help Manual:
 
 ## 2. Install Finance::Quote::YahooJapan
 
-a. Type `cpanm git://github.com/LiosK/Finance--Quote--YahooJapan.git` in the terminal. Or, if you don't prefer to use `cpanm`, locate the directory where `Finance::Quote::*` are installed, and then put `lib/Finance/Quote/YahooJapan.pm` in the directory.
+a. Type `cpanm https://github.com/LiosK/Finance--Quote--YahooJapan.git` in the terminal. Or, if you don't prefer to use `cpanm`, locate the directory where `Finance::Quote::*` are installed, and then put `lib/Finance/Quote/YahooJapan.pm` in the directory.
 
 b. Set the `FQ_LOAD_QUOTELET` environment variable to `-defaults YahooJapan` in order to load Finance::Quote::YahooJapan.
 
