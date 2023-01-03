@@ -3,10 +3,10 @@ package Finance::Quote::YahooJapan;
 use utf8;
 use 5.018;
 use warnings;
-use HTML::TreeBuilder;
+use HTML::TreeBuilder 5 -weak;
 use URI::Escape;
 
-our $VERSION = 'v1.1.0';
+our $VERSION = 'v1.2.0';
 
 # Maximum number of symbols that a search query can contain.
 my $n_symbols_per_query = 4;
@@ -49,7 +49,6 @@ sub yahoo_japan {
             $tree->parse_content($reply->content);
             my %quotes = _scrape($tree);
             my $has_next_page = _has_next_page($tree, 1);
-            $tree = $tree->delete;  # detach memory
 
             for my $sym (@syms) {
                 next if ($info{$sym, 'success'});
@@ -85,7 +84,6 @@ sub yahoo_japan {
                 $tree->parse_content($reply->content);
                 %quotes = (%quotes, _scrape($tree));
                 my $has_next_page = _has_next_page($tree, $page);
-                $tree = $tree->delete;  # detach memory
 
                 last if (!$has_next_page);
             }
@@ -178,11 +176,12 @@ sub _scrape {
 
     my $container = $tree->look_down('id', 'sr');
     if (defined $container) {
-        for my $e ($container->look_down('class', '_239Zl3PI')) {
-            my $sym = $e->look_down('class', 'CGplzQf_')->as_text;
-            my ($date, $time) = _parse_datetime($e->look_down('class', '_2JynCBOQ')->as_text);
+        # process each <article> that represents a single item
+        for my $e ($container->look_down('class', '_2m4vJZHH')) {
+            my $sym = $e->look_down('class', '_2QwBsxBs')->as_text;
+            my ($date, $time) = _parse_datetime($e->look_down('class', '_13VozY2f')->as_text);
             my $quote = {
-                name  => $e->look_down('class', '_2MnVoYg5')->as_text,
+                name  => $e->look_down('class', '_1ApM7LhG')->as_text,
                 price => $e->look_down('class', '_3rXWJKZF')->as_text,
                 date  => $date,
                 time  => $time
