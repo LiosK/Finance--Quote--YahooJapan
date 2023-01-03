@@ -130,7 +130,7 @@ sub delay_per_request {
 sub _has_next_page {
     my ($tree, $current_page) = @_;
 
-    my $elm_paging = $tree->look_down('class', 'KkN9Pygd');
+    my $elm_paging = $tree->look_down('id', 'pagerbtm');
     if (defined $elm_paging) {
         for my $page_link ($elm_paging->find('button')) {
             my $num = $page_link->as_text;
@@ -177,11 +177,11 @@ sub _scrape {
     my $container = $tree->look_down('id', 'sr');
     if (defined $container) {
         # process each <article> that represents a single item
-        for my $e ($container->look_down('class', '_2m4vJZHH')) {
+        for my $e ($container->find('article')) {
             my $sym = $e->look_down('class', '_2QwBsxBs')->as_text;
-            my ($date, $time) = _parse_datetime($e->look_down('class', '_13VozY2f')->as_text);
+            my ($date, $time) = _parse_datetime($e->find('time')->as_text);
             my $quote = {
-                name  => $e->look_down('class', '_1ApM7LhG')->as_text,
+                name  => $e->find('h1')->as_text,
                 price => $e->look_down('class', '_3rXWJKZF')->as_text,
                 date  => $date,
                 time  => $time
