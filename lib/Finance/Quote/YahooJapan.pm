@@ -181,7 +181,7 @@ sub _scrape {
             my $sym = $e->look_down('class', '_2QwBsxBs')->as_text;
             my ($date, $time) = _parse_datetime($e->find('time')->as_text);
             my $quote = {
-                name  => $e->find('h1')->as_text,
+                name  => $e->look_down('class', '_1ApM7LhG')->as_text,
                 price => $e->look_down('class', '_3rXWJKZF')->as_text,
                 date  => $date,
                 time  => $time
