@@ -16,7 +16,7 @@ Finance::Quote::YahooJapan is a submodule of Finance::Quote, and adds support fo
 
 ## 1. Install Finance::Quote
 
-Install and setup Finance::Quote module as explained in the GnuCash Help Manual: [https://code.gnucash.org/docs/C/gnucash-help/acct-create.html#accts-online-quotes](https://code.gnucash.org/docs/C/gnucash-help/acct-create.html#accts-online-quotes)
+Install and setup Finance::Quote module as explained in the GnuCash Help Manual: [https://www.gnucash.org/docs/v5/C/gnucash-manual/acct-create.html#accts-online-quotes](https://www.gnucash.org/docs/v5/C/gnucash-manual/acct-create.html#accts-online-quotes)
 
 ## 2. Install Finance::Quote::YahooJapan
 
@@ -26,7 +26,7 @@ b. Set the `FQ_LOAD_QUOTELET` environment variable to `-defaults YahooJapan` in 
 
 ## 3. Setup GnuCash Online Quote Feature
 
-Launch GnuCash and setup your securities as explained in the Manual: [https://code.gnucash.org/docs/C/gnucash-help/acct-create.html#accts-online-quotes](https://code.gnucash.org/docs/C/gnucash-help/acct-create.html#accts-online-quotes)
+Launch GnuCash and setup your securities as explained in the Manual: [https://www.gnucash.org/docs/v5/C/gnucash-manual/acct-create.html#accts-online-quotes](https://www.gnucash.org/docs/v5/C/gnucash-manual/acct-create.html#accts-online-quotes)
 
 # LICENSE
 
