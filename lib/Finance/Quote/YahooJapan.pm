@@ -6,7 +6,7 @@ use warnings;
 use HTML::TreeBuilder 5 -weak;
 use URI::Escape;
 
-our $VERSION = 'v1.2.0';
+our $VERSION = 'v1.2.1';
 
 # Maximum number of symbols that a search query can contain.
 my $n_symbols_per_query = 4;
