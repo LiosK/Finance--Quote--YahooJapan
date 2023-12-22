@@ -4,7 +4,7 @@
       "LiosK <contact@mail.liosk.net>"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Minilla/v3.1.20, CPAN::Meta::Converter version 2.150010",
+   "generated_by" : "Minilla/v3.1.23, CPAN::Meta::Converter version 2.150010",
    "license" : [
       "gpl_3"
    ],
@@ -66,11 +66,11 @@
          "web" : "https://github.com/LiosK/Finance--Quote--YahooJapan"
       }
    },
-   "version" : "v1.2.0",
+   "version" : "v1.2.1",
    "x_contributors" : [
       "Yuta Hayashibe <yuta@hayashibe.jp>",
       "jun ozeki <komusubi@gmail.com>"
    ],
-   "x_serialization_backend" : "JSON::PP version 4.07",
+   "x_serialization_backend" : "JSON::PP version 4.16",
    "x_static_install" : 1
 }
