@@ -180,8 +180,12 @@ sub _scrape {
         for my $e ($container->find('article')) {
             my $sym = $e->look_down('class', '_2QwBsxBs')->as_text;
             my ($date, $time) = _parse_datetime($e->find('time')->as_text);
+            my $tmp = $e->look_down('class', '_1ApM7LhG');
+            if (!defined $tmp){
+		$tmp = $e->find('h1');
+            };
             my $quote = {
-                name  => $e->look_down('class', '_1ApM7LhG')->as_text,
+		name  => $tmp->as_text,
                 price => $e->look_down('class', '_3rXWJKZF')->as_text,
                 date  => $date,
                 time  => $time
