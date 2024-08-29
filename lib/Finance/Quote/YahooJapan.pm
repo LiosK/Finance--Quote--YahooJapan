@@ -6,7 +6,7 @@ use warnings;
 use HTML::TreeBuilder 5 -weak;
 use URI::Escape;
 
-our $VERSION = 'v1.2.1';
+our $VERSION = 'v1.2.2';
 
 # Maximum number of symbols that a search query can contain.
 my $n_symbols_per_query = 4;
@@ -178,11 +178,11 @@ sub _scrape {
     if (defined $container) {
         # process each <article> that represents a single item
         for my $e ($container->find('article')) {
-            my $sym = $e->look_down('class', '_2QwBsxBs')->as_text;
+            my $sym = $e->look_down('class', qr/_2QwB$/)->as_text;
             my ($date, $time) = _parse_datetime($e->find('time')->as_text);
             my $quote = {
                 name  => $e->find('h2')->as_text,
-                price => $e->look_down('class', '_3rXWJKZF')->as_text,
+                price => $e->look_down('class', qr/_3rXW$/)->as_text,
                 date  => $date,
                 time  => $time
             };
