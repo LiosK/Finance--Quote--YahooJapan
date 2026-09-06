@@ -5,8 +5,9 @@ use 5.018;
 use warnings;
 use HTML::TreeBuilder 5 -weak;
 use URI::Escape;
+use JSON::PP;
 
-our $VERSION = 'v1.2.2';
+our $VERSION = 'v1.2.5';
 
 # Maximum number of symbols that a search query can contain.
 my $n_symbols_per_query = 4;
@@ -22,38 +23,40 @@ sub methods {
 }
 
 sub labels {
-    return (yahoo_japan => ['method', 'success', 'symbol', 'name', 'date',
-                            'isodate', 'time', 'currency', 'price', 'errormsg']);
+    return (yahoo_japan => [qw(method success symbol name date isodate time currency price last nav errormsg)]);
 }
 
 sub yahoo_japan {
     my ($quoter, @symbols) = @_;
-    return if (!@symbols); # do nothing if no symbols.
+    return if (!@symbols);
 
     my $ua = $quoter->get_user_agent;
-    my $url_base = 'https://finance.yahoo.co.jp/search/';
 
+    my $url_base = 'https://finance.yahoo.co.jp/search/';
     my %info = ();
     my @retry_later = ();
 
-    # initial trial loop: ignore page links.
+    # Initial trial loop: ignore page links.
     while (my @syms = splice @symbols, 0, $n_symbols_per_query) {
         my $url = $url_base . '?query=' . join '+', map { uri_escape($_) } @syms;
-        # trick to avoid single-item pages
+        # Avoid single-item auto-redirect pages
         $url .= '+%5EDJI' if (@syms < 3 && @syms < $n_symbols_per_query);
 
         my $reply = $ua->get($url);
         if ($reply->is_success) {
+            my $content = $reply->decoded_content;
             my $tree = HTML::TreeBuilder->new;
             $tree->ignore_unknown(0);
-            $tree->parse_content($reply->content);
-            my %quotes = _scrape($tree);
+            $tree->parse_content($content);
+
+            my %quotes = _scrape($tree, $content);
             my $has_next_page = _has_next_page($tree, 1);
 
             for my $sym (@syms) {
                 next if ($info{$sym, 'success'});
-                if (exists $quotes{$sym}) {
-                    %info = (%info, _convert_quote($quoter, $sym, $quotes{$sym}));
+                my $match = _lookup_quote(\%quotes, $sym);
+                if ($match) {
+                    %info = (%info, _convert_quote($quoter, $sym, $match));
                 } elsif ($has_next_page) {
                     push @retry_later, $sym;
                 } else {
@@ -68,21 +71,23 @@ sub yahoo_japan {
         if (@symbols) { select undef, undef, undef, $delay_per_request; }
     }
 
-    # retry loop: follow page links.
+    # Retry loop: follow page links.
     while (my @syms = splice @retry_later, 0, $n_symbols_per_query) {
         my %quotes = ();
         my $url = $url_base . '?query=' . join '+', map { uri_escape($_) } @syms;
-        # trick to avoid single-item pages
         $url .= '+%5EDJI' if (@syms < 3 && @syms < $n_symbols_per_query);
 
         for (my $page = 1; $page <= $n_pages_per_query; $page++) {
             select undef, undef, undef, $delay_per_request;
             my $reply = $ua->get($url . '&page=' . $page);
             if ($reply->is_success) {
+                my $content = $reply->decoded_content;
                 my $tree = HTML::TreeBuilder->new;
                 $tree->ignore_unknown(0);
-                $tree->parse_content($reply->content);
-                %quotes = (%quotes, _scrape($tree));
+                $tree->parse_content($content);
+
+                my %scraped = _scrape($tree, $content);
+                %quotes = (%quotes, %scraped);
                 my $has_next_page = _has_next_page($tree, $page);
 
                 last if (!$has_next_page);
@@ -90,8 +95,9 @@ sub yahoo_japan {
         }
         for my $sym (@syms) {
             next if ($info{$sym, 'success'});
-            if (exists $quotes{$sym}) {
-                %info = (%info, _convert_quote($quoter, $sym, $quotes{$sym}));
+            my $match = _lookup_quote(\%quotes, $sym);
+            if ($match) {
+                %info = (%info, _convert_quote($quoter, $sym, $match));
             } else {
                 $info{$sym, 'success'}  = 0;
                 $info{$sym, 'symbol'}   = $sym;
@@ -126,102 +132,191 @@ sub delay_per_request {
     return $class;
 }
 
-# Tests if a list page has the next page of it.
+sub _lookup_quote {
+    my ($quotes, $sym) = @_;
+    return $quotes->{$sym} if exists $quotes->{$sym};
+    return $quotes->{lc $sym} if exists $quotes->{lc $sym};
+    return $quotes->{uc $sym} if exists $quotes->{uc $sym};
+
+    (my $base = $sym) =~ s/\.[A-Za-z]+$//;
+    return $quotes->{$base} if exists $quotes->{$base};
+    return $quotes->{lc $base} if exists $quotes->{lc $base};
+    return undef;
+}
+
 sub _has_next_page {
     my ($tree, $current_page) = @_;
 
     my $elm_paging = $tree->look_down('id', 'pagerbtm');
     if (defined $elm_paging) {
-        for my $page_link ($elm_paging->find('button')) {
-            my $num = $page_link->as_text;
-            return 1 if ($num =~ /^[0-9]+$/ && $num == $current_page + 1);
+        for my $btn ($elm_paging->find('button')) {
+            my $txt = $btn->as_text // '';
+            return 1 if ($txt =~ /^[0-9]+$/ && $txt == $current_page + 1);
+            return 1 if ($txt =~ /次へ/ && !$btn->attr('disabled'));
         }
     }
 
     return 0;
 }
 
-# Converts an internal quote data to Finance::Quote-style one.
 sub _convert_quote {
     my ($quoter, $sym, $quote) = @_;
     my %info = ();
+
+    # Base metadata
     $info{$sym, 'symbol'}   = $sym;
     $info{$sym, 'currency'} = 'JPY';
     $info{$sym, 'method'}   = 'yahoo_japan';
-    $info{$sym, 'name'}     = $quote->{'name'};
-    $info{$sym, 'date'}     = $quote->{'date'};
-    $info{$sym, 'isodate'}  = $quote->{'date'};
-    $info{$sym, 'time'}     = $quote->{'time'};
-    $info{$sym, 'price'}    = $quote->{'price'};
+    $info{$sym, 'name'}     = $sym; # Keep ASCII to avoid JSON serializer crashes
 
-    # validate quote.
-    my @errors = ();
-    push @errors, 'Invalid name.' if ($info{$sym, 'name'} =~ /^\s*$/);
-    push @errors, 'Invalid price.' if ($info{$sym, 'price'} eq '');
-    if ($info{$sym, 'date'} eq '') {
-        push @errors, 'Invalid datetime.';
-    } else {
-        $quoter->store_date(\%info, $sym, { isodate => $info{$sym, 'date'} });
+    my $raw_price = $quote->{'price'} // '';
+    $raw_price =~ tr/.0-9//cd;
+
+    if ($raw_price eq '') {
+        $info{$sym, 'success'}  = 0;
+        $info{$sym, 'errormsg'} = 'Invalid price.';
+        return %info;
     }
 
-    $info{$sym, 'errormsg'} = join ' / ', @errors;
-    $info{$sym, 'success'}  = $info{$sym, 'errormsg'} ? 0 : 1;
+    # Mutual fund divisor handling
+    my $num_price = 0 + $raw_price;
+    if ($sym =~ /^[0-9]{8}$/ || ($quote->{'is_fund'} // 0)) {
+        $num_price = $num_price / 10000;
+    }
+
+    # Set numeric price across all GnuCash price aliases
+    $info{$sym, 'price'} = $num_price;
+    $info{$sym, 'last'}  = $num_price;
+    $info{$sym, 'nav'}   = $num_price;
+
+    # Date normalization
+    my $date_str = $quote->{'date'};
+    if (!defined $date_str || $date_str !~ /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/) {
+        my @now = localtime;
+        $date_str = sprintf('%04d-%02d-%02d', $now[5] + 1900, $now[4] + 1, $now[3]);
+    }
+
+    $info{$sym, 'date'}    = $date_str;
+    $info{$sym, 'isodate'} = $date_str;
+    $info{$sym, 'time'}    = $quote->{'time'} || '15:00:00';
+
+    # Populate standard Finance::Quote date keys
+    eval {
+        $quoter->store_date(\%info, $sym, { isodate => $date_str });
+    };
+
+    $info{$sym, 'success'}  = 1;
+    $info{$sym, 'errormsg'} = '';
 
     return %info;
 }
 
 sub _scrape {
-    my $tree = shift;
+    my ($tree, $raw_html) = @_;
     my %quotes = ();
 
-    my $container = $tree->look_down('id', 'sr');
-    if (defined $container) {
-        # process each <article> that represents a single item
-        for my $e ($container->find('article')) {
-            my $sym = $e->look_down('class', qr/_2QwB$/)->as_text;
-            my ($date, $time) = _parse_datetime($e->find('time')->as_text);
-            my $quote = {
-                name  => $e->find('h2')->as_text,
-                price => $e->look_down('class', qr/_3rXW$/)->as_text,
-                date  => $date,
-                time  => $time
-            };
-            $quote->{'price'} =~ tr/.0-9//cd;   # strip commas, etc.
+    # Strategy 1: Extract __PRELOADED_STATE__ directly using JSON::PP
+    if (defined $raw_html && $raw_html =~ m{window\.__PRELOADED_STATE__\s*=\s*(\{.*?\});?\s*</script>}s) {
+        my $json_text = $1;
+        my $json_parser = JSON::PP->new->utf8(0);
+        my $data = eval { $json_parser->decode($json_text) };
+        if ($data && ref $data eq 'HASH' && exists $data->{mainSearchList}{results}) {
+            for my $item (@{ $data->{mainSearchList}{results} }) {
+                my $code = $item->{code};
+                next unless defined $code;
 
-            # for a stock code, register a duplicate quote with market letter
-            if ($sym =~ /^[0-9A-Z]{2}[0-9][0-9A-Z][0-9]?$/) {
-                my $pat = qr/(?:quote\/|code=)($sym\.[A-Z])/;
-                $e->look_down('_tag', 'a', 'href', $pat)->attr('href') =~ $pat;
-                $quotes{lc $1} = $quote if (defined $1);
+                my ($date, $time) = _parse_datetime($item->{latestPriceTime} // '');
+                my $price = $item->{price} // '';
+                $price =~ tr/.0-9//cd;
+                next if $price eq '';
+
+                my $quote = {
+                    name    => $item->{name} // '',
+                    price   => $price,
+                    date    => $date,
+                    time    => $time,
+                    is_fund => ($item->{marketName} && $item->{marketName} =~ /投資信託/) ? 1 : 0,
+                };
+
+                $quotes{$code} = $quote;
+                $quotes{lc $code} = $quote;
+
+                if ($item->{detailLink} && $item->{detailLink} =~ m{(?:quote/|code=)([^/\?]+)}) {
+                    my $full_ticker = $1;
+                    $quotes{$full_ticker} = $quote;
+                    $quotes{lc $full_ticker} = $quote;
+                    (my $root = $full_ticker) =~ s/\.[A-Za-z]+$//;
+                    $quotes{$root} = $quote;
+                    $quotes{lc $root} = $quote;
+                }
             }
+            return %quotes if %quotes;
+        }
+    }
 
-            # XXX destructive when a stock quote from other market already exists
+    # Strategy 2: DOM fallback
+    my $container = $tree->look_down('id', 'sr') // $tree->look_down('id', 'root');
+    if (defined $container) {
+        for my $e ($container->find('article')) {
+            my $sym_elem  = $e->look_down('class', qr/SearchItem__supplement/)
+                         // $e->look_down('class', qr/SearchItem__code/);
+            my $name_elem = $e->look_down('class', qr/SearchItem__name/);
+            my $price_elem = $e->look_down('class', qr/SearchItem__price\b/);
+            my $time_elem = $e->find('time');
+
+            next unless ($sym_elem && $price_elem);
+
+            my $sym = $sym_elem->as_text;
+            $sym =~ s/^\s+|\s+$//g;
+
+            my $price = $price_elem->as_text;
+            $price =~ tr/.0-9//cd;
+            next if $price eq '';
+
+            my ($date, $time) = $time_elem ? _parse_datetime($time_elem->as_text) : ('', '');
+
+            my $quote = {
+                name    => $name_elem ? $name_elem->as_text : '',
+                price   => $price,
+                date    => $date,
+                time    => $time,
+                is_fund => 0,
+            };
+
             $quotes{$sym} = $quote;
+            $quotes{lc $sym} = $quote;
+
+            my $link = $e->look_down('_tag', 'a', 'href', qr/quote\//);
+            if ($link && $link->attr('href') =~ m{quote/([^/\?]+)}) {
+                my $full_ticker = $1;
+                $quotes{$full_ticker} = $quote;
+                $quotes{lc $full_ticker} = $quote;
+                (my $root = $full_ticker) =~ s/\.[A-Za-z]+$//;
+                $quotes{$root} = $quote;
+                $quotes{lc $root} = $quote;
+            }
         }
     }
 
     return %quotes;
 }
 
-# Determines the date and time of a quote.
 sub _parse_datetime($;) {
-    my $datetime = shift;
+    my $datetime = shift // '';
     my @now = localtime;
     my ($year, $mon, $mday, $time) = ($now[5] + 1900, 0, 0, '15:00:00');
 
     if ($datetime =~ /([0-9]{1,2}):([0-9]{1,2})/) {
-        # HH:MM
         $time = sprintf '%02d:%02d:00', $1, $2;
         ($mon, $mday) = ($now[4] + 1, $now[3]);
     }
     if ($datetime =~ /([0-9]{1,2})\/([0-9]{1,2})/) {
-        # MM/DD
         ($mon, $mday) = ($1, $2);
-        $year-- if ($now[4] + 1 < $mon); # MM may point last December in January.
+        $year-- if ($now[4] + 1 < $mon);
     }
 
-    my $date = sprintf '%04d-%02d-%02d', $year, $mon, $mday;
-    return ($mon && $mday) ? ($date, $time) : ('', '');
+    my $date = ($mon && $mday) ? sprintf('%04d-%02d-%02d', $year, $mon, $mday) : sprintf('%04d-%02d-%02d', $now[5] + 1900, $now[4] + 1, $now[3]);
+    return ($date, $time);
 }
 
 1;
